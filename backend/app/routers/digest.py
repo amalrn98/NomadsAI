@@ -19,16 +19,16 @@ class DigestRequest(BaseModel):
 @limiter.limit("3/hour")
 async def send_digest(request: Request, response: Response, req: DigestRequest):
     try:
+        # Search current, source-linked travel news. Local fixture data is filtered
+        # out below and is never presented as a current opportunity.
         signals = await get_signals(
             request=request,
             response=response,
-            destination=None,
+            destination=req.region or "global travel",
             region=req.region,
             limit=20,
-            online_mode=False,
+            online_mode=True,
         )
-        # Local JSON fixtures are sample data, never current travel deals.
-        # Only source-linked live search results may be included in a digest.
         live_items = [
             item for item in signals
             if item.get("data_status") == "live_search_result"
