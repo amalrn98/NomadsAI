@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from ..rate_limit import limiter
 from typing import List
 from ..models import TravelPlanRequest, TravelPlanResponse
@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.post("/", response_model=TravelPlanResponse)
 @limiter.limit("3/minute")
-async def plan_travel(request: Request, payload: TravelPlanRequest):
+async def plan_travel(request: Request, response: Response, payload: TravelPlanRequest):
     """
     Generate AI-powered travel itinerary with complete travel plan data.
     Uses dynamic AI generation without pre-fed data.
