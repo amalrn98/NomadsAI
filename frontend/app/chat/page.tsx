@@ -27,7 +27,7 @@ export default function ChatPage() {
 		{
 			id: "1",
 			role: "assistant",
-			content: "Hello! I'm your AI travel assistant powered by NVIDIA's GPT-OSS-120B model. I can help you plan trips, discover destinations, and provide cultural insights. What would you like to know about travel?",
+			content: "Hello! I'm your AI travel assistant powered by Google Gemini. I can help you plan trips, discover destinations, and provide cultural insights. What would you like to know about travel?",
 			timestamp: new Date()
 		}
 	]);
@@ -84,7 +84,7 @@ export default function ChatPage() {
 				const assistantMessage: Message = {
 					id: (Date.now() + 1).toString(),
 					role: "assistant",
-					content: data.response || "I'm sorry, I couldn't process your request. Please try again.",
+					content: data.reply || "I'm sorry, I couldn't process your request. Please try again.",
 					timestamp: new Date()
 				};
 				setMessages(prev => [...prev, assistantMessage]);
@@ -133,7 +133,7 @@ export default function ChatPage() {
 						AI Travel Assistant
 					</h1>
 					<p className="text-gray-300 max-w-2xl mx-auto">
-						Powered by NVIDIA's GPT-OSS-120B model for intelligent travel planning, 
+						Powered by Google Gemini for intelligent travel planning, 
 						cultural insights, and personalized recommendations.
 					</p>
 				</div>
