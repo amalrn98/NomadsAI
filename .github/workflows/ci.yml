@@ -54,7 +54,7 @@ jobs:
         working-directory: frontend
         run: |
           npm install --package-lock-only --ignore-scripts
-          npm audit fix --package-lock-only
+          npm audit fix --package-lock-only --audit-level=high
 
       - name: Install frontend dependencies from lockfile
         working-directory: frontend
