@@ -29,8 +29,11 @@ async def plan_travel(request: Request, payload: TravelPlanRequest):
         
         # Calculate days
         from datetime import datetime
-        start_date = datetime.strptime(payload.departure_date, "%Y-%m-%d")
-        end_date = datetime.strptime(payload.return_date, "%Y-%m-%d")
+        try:
+            start_date = datetime.strptime(payload.departure_date, "%Y-%m-%d")
+            end_date = datetime.strptime(payload.return_date, "%Y-%m-%d")
+        except ValueError as date_error:
+            raise HTTPException(status_code=422, detail="Dates must be valid calendar dates in YYYY-MM-DD format") from date_error
         days = (end_date - start_date).days + 1
         
         if days < 1 or days > 90:
