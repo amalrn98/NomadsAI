@@ -44,6 +44,9 @@ class MemoryUpdate(BaseModel):
         values = self.model_dump(exclude_unset=True, mode="json")
         if not values:
             raise HTTPException(status_code=400, detail="Provide at least one field to update.")
+        for field in ("title", "content", "destination", "companions"):
+            if field in values and values[field] is None:
+                raise HTTPException(status_code=400, detail=f"{field} cannot be null.")
         return values
 
 
