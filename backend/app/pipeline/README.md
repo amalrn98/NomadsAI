@@ -13,11 +13,9 @@ The pipeline provides local destination knowledge, itinerary structure/enrichmen
 - Gemini-backed behavior is handled through backend service modules and may require GEMINI_API_KEY.
 
 ## Code map
-- orchestrator.py: pipeline coordination.
-- standalone_pipeline.py: lightweight pipeline implementation.
-- data_ingest.py: knowledge ingestion helpers.
-- data_retriever.py and lightweight_retriever.py: retrieval implementations.
-- skeleton_builder.py and lightweight_skeleton_builder.py: itinerary structure generation.
+- standalone_pipeline.py: pipeline entry point (`generate_itinerary_pipeline`) with deterministic fallback.
+- skeleton_builder.py: stage 1, itinerary structure generation.
+- data_retriever.py: stage 2, enrichment from local destination knowledge.
 
 Check current call sites and tests before changing pipeline behavior. The repository docs/ARCHITECTURE.md guide explains the subsystem's application role.
 
