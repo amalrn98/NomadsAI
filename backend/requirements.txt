@@ -1,12 +1,12 @@
-fastapi==0.115.0
+fastapi==0.165.0
 slowapi==0.1.9
 uvicorn[standard]==0.30.6
-pydantic==2.8.2
-pydantic[email]==2.8.2
+pydantic==2.14.4
+pydantic[email]==2.14.4
 sqlmodel==0.0.22
-python-dotenv==1.0.1
-pytest==8.2.2
-requests==2.32.3
+python-dotenv==1.2.3
+pytest==9.2.0
+requests==2.34.2
 httpx==0.27.2
 duckduckgo_search==6.3.7
 # Enhanced AI capabilities
@@ -22,5 +22,5 @@ jsonschema>=4.0.0
 # sentence-transformers>=2.2.0  # Commented out for quick deployment
 
 # Additional utilities
-python-multipart==0.0.12
+python-multipart==0.0.34
 email-validator==2.2.0
