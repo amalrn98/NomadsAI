@@ -1,280 +1,116 @@
-"""
-LLM Provider Service for NomadAI
-Supports Groq (primary), DeepSeek, Together.ai, and NVIDIA NIM with automatic fallback.
-"""
+"""Gemini API provider used by NomadsAI."""
 
-import os
-from typing import List, Dict, Optional, Any
 import logging
+import os
+from typing import Any
 
-try:
-    import httpx
-except ImportError:
-    httpx = None
+import httpx
 
 logger = logging.getLogger(__name__)
+GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
-class LLMProvider:
-    """Universal LLM provider supporting multiple AI services with automatic fallback"""
-    
-    def __init__(self):
-        # Groq Configuration (Primary - Fast & Free)
-        self.groq_api_key = os.getenv("GROQ_API_KEY", "")
-        self.groq_base_url = "https://api.groq.com/openai/v1/chat/completions"
-        self.groq_model = "llama-3.1-70b-versatile"  # Current recommended model (mixtral-8x7b deprecated)
-        
-        # DeepSeek Configuration (Fallback 1 - Capable & Free)
-        self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY", "")
-        self.deepseek_base_url = "https://api.deepseek.com/v1/chat/completions"
-        self.deepseek_model = "deepseek-chat"
-        
-        # Together.ai Configuration (Fallback 2)
-        self.together_api_key = os.getenv("TOGETHER_API_KEY", "")
-        self.together_base_url = "https://api.together.xyz/v1/chat/completions"
-        self.together_model = "mistralai/Mixtral-8x7B-Instruct-v0.1"
-        
-        # NVIDIA NIM Configuration (Fallback 3)
-        self.nvidia_api_key = os.getenv("NVIDIA_API_KEY", "")
-        self.nvidia_base_url = "https://api.nvcf.nvidia.com/v1/chat/completions"
-        self.nvidia_model = "nvidia/gpt-oss-120b"
-        
-        # Provider priority: Groq > DeepSeek > Together.ai > NVIDIA NIM
-        self.providers = self._get_available_providers()
-        
-    def _get_available_providers(self) -> List[str]:
-        """Get list of available providers in priority order"""
-        providers = []
-        
-        if self.groq_api_key:
-            providers.append("groq")
-            logger.info("Groq provider available (Primary)")
-        
-        if self.deepseek_api_key:
-            providers.append("deepseek")
-            logger.info("DeepSeek provider available")
-        
-        if self.together_api_key:
-            providers.append("together")
-            logger.info("Together.ai provider available")
-        
-        if self.nvidia_api_key:
-            providers.append("nvidia")
-            logger.info("NVIDIA NIM provider available")
-            
-        if not providers:
-            providers.append("fallback")
-            logger.warning("No API keys configured, using fallback mode")
-            
-        return providers
-    
+
+def _messages_to_gemini(messages: list[dict[str, str]]) -> tuple[dict[str, str] | None, list[dict[str, Any]]]:
+    """Convert OpenAI-style messages to Gemini systemInstruction and contents."""
+    system_parts = []
+    contents: list[dict[str, Any]] = []
+    for message in messages:
+        role = message.get("role", "user")
+        content = str(message.get("content", ""))
+        if not content:
+            continue
+        if role == "system":
+            system_parts.append(content)
+            continue
+        gemini_role = "model" if role == "assistant" else "user"
+        if contents and contents[-1]["role"] == gemini_role:
+            contents[-1]["parts"].append({"text": content})
+        else:
+            contents.append({"role": gemini_role, "parts": [{"text": content}]})
+
+    system_instruction = {"parts": [{"text": "\n\n".join(system_parts)}]} if system_parts else None
+    return system_instruction, contents
+
+
+class GeminiProvider:
+    """Single-provider Gemini client. Credentials are read from server environment."""
+
+    def __init__(self) -> None:
+        self.api_key = os.getenv("GEMINI_API_KEY", "").strip()
+        self.model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip()
+
     def is_configured(self) -> bool:
-        """Check if at least one provider is configured"""
-        return bool(self.groq_api_key or self.deepseek_api_key or self.together_api_key or self.nvidia_api_key)
-    
-    async def generate_completion(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """
-        Generate completion using the first available provider.
-        
-        Args:
-            messages: List of message dicts with 'role' and 'content'
-            **kwargs: Additional parameters like temperature, max_tokens
-            
-        Returns:
-            Generated text response
-        """
-        for provider in self.providers:
-            try:
-                if provider == "groq":
-                    return await self._call_groq(messages, **kwargs)
-                elif provider == "deepseek":
-                    return await self._call_deepseek(messages, **kwargs)
-                elif provider == "together":
-                    return await self._call_together(messages, **kwargs)
-                elif provider == "nvidia":
-                    return await self._call_nvidia(messages, **kwargs)
-                elif provider == "fallback":
-                    return self._fallback_response(messages)
-            except Exception as e:
-                logger.warning(f"{provider} provider failed: {e}")
-                continue
-        
-        # If all providers fail, use fallback
-        return self._fallback_response(messages)
-    
-    async def _call_groq(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """Call Groq API (Primary - Fast & Free)"""
-        if httpx is None:
-            raise Exception("httpx not available")
-            
-        headers = {
-            "Authorization": f"Bearer {self.groq_api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": self.groq_model,
-            "messages": messages,
-            "temperature": kwargs.get("temperature", 0.7),
-            "max_tokens": kwargs.get("max_tokens", 2048),
-            "stream": False
-        }
-        
-        async with httpx.AsyncClient(timeout=120) as client:
-            response = await client.post(self.groq_base_url, headers=headers, json=payload)
-            if response.status_code != 200:
-                error_detail = response.text
-                logger.error(f"Groq API error {response.status_code}: {error_detail}")
+        return bool(self.api_key)
+
+    async def generate_completion(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
+        if not self.api_key:
+            raise RuntimeError("Gemini is not configured. Set GEMINI_API_KEY on the backend.")
+
+        system_instruction, contents = _messages_to_gemini(messages)
+        if not contents:
+            raise ValueError("At least one user message is required.")
+
+        payload: dict[str, Any] = {"contents": contents}
+        if system_instruction:
+            payload["systemInstruction"] = system_instruction
+
+        generation_config: dict[str, Any] = {}
+        if "temperature" in kwargs:
+            generation_config["temperature"] = kwargs["temperature"]
+        max_tokens = kwargs.get("max_output_tokens", kwargs.get("max_tokens"))
+        if max_tokens is not None:
+            generation_config["maxOutputTokens"] = max_tokens
+        if generation_config:
+            payload["generationConfig"] = generation_config
+
+        model = kwargs.get("model") or self.model
+        url = f"{GEMINI_API_BASE}/{model}:generateContent"
+        headers = {"x-goog-api-key": self.api_key, "Content-Type": "application/json"}
+
+        async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client:
+            response = await client.post(url, headers=headers, json=payload)
             response.raise_for_status()
             data = response.json()
-            return data["choices"][0]["message"]["content"].strip()
-    
-    async def _call_deepseek(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """Call DeepSeek API (Fallback 1)"""
-        if httpx is None:
-            raise Exception("httpx not available")
-            
-        headers = {
-            "Authorization": f"Bearer {self.deepseek_api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": self.deepseek_model,
-            "messages": messages,
-            "temperature": kwargs.get("temperature", 0.7),
-            "max_tokens": kwargs.get("max_tokens", 2048),
-            "stream": False
-        }
-        
-        async with httpx.AsyncClient(timeout=120) as client:
-            response = await client.post(self.deepseek_base_url, headers=headers, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            return data["choices"][0]["message"]["content"].strip()
-    
-    async def _call_together(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """Call Together.ai API"""
-        if httpx is None:
-            raise Exception("httpx not available")
-            
-        headers = {
-            "Authorization": f"Bearer {self.together_api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": self.together_model,
-            "messages": messages,
-            "temperature": kwargs.get("temperature", 0.7),
-            "max_tokens": kwargs.get("max_tokens", 2048),
-            "stream": False
-        }
-        
-        async with httpx.AsyncClient(timeout=120) as client:
-            response = await client.post(self.together_base_url, headers=headers, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            return data["choices"][0]["message"]["content"].strip()
-    
-    async def _call_nvidia(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """Call NVIDIA NIM API"""
-        if httpx is None:
-            raise Exception("httpx not available")
-            
-        headers = {
-            "Authorization": f"Bearer {self.nvidia_api_key}",
-            "Content-Type": "application/json",
-            "User-Agent": "NomadAI-Travel-Platform/2.2.0"
-        }
-        
-        payload = {
-            "model": self.nvidia_model,
-            "messages": messages,
-            "temperature": kwargs.get("temperature", 0.7),
-            "max_tokens": kwargs.get("max_tokens", 2048),
-            "stream": False
-        }
-        
-        async with httpx.AsyncClient(timeout=120) as client:
-            response = await client.post(self.nvidia_base_url, headers=headers, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            return data["choices"][0]["message"]["content"].strip()
-    
-    def _fallback_response(self, messages: List[Dict[str, str]]) -> str:
-        """Generate a basic response when no providers are available"""
-        user_message = messages[-1]["content"] if messages else ""
-        
-        return """I'm NomadAI, your travel planning assistant. I can help you create personalized itineraries for any destination. 
 
-To get started, please tell me:
-- Where would you like to travel?
-- How many days will you be there?
-- What are your interests (culture, food, history, adventure, etc.)?
-- What's your budget preference?
+        candidates = data.get("candidates") or []
+        if not candidates:
+            block_reason = (data.get("promptFeedback") or {}).get("blockReason", "unknown")
+            raise RuntimeError(f"Gemini returned no response candidate (reason: {block_reason}).")
 
-I'll create a detailed, day-by-day itinerary tailored specifically to your preferences and travel style."""
-    
-    def get_provider_info(self) -> Dict[str, Any]:
-        """Get information about configured providers"""
-        info = {
-            "configured_providers": self.providers,
-            "default_provider": self.providers[0] if self.providers else "none"
-        }
-        
-        if "groq" in self.providers:
-            info["groq"] = {
-                "name": "Groq",
-                "model": self.groq_model,
-                "status": "active",
-                "priority": "primary"
-            }
-        
-        if "deepseek" in self.providers:
-            info["deepseek"] = {
-                "name": "DeepSeek",
-                "model": self.deepseek_model,
-                "status": "active",
-                "priority": "fallback-1"
-            }
-        
-        if "together" in self.providers:
-            info["together"] = {
-                "name": "Together.ai",
-                "model": self.together_model,
-                "status": "active",
-                "priority": "fallback-2"
-            }
-        
-        if "nvidia" in self.providers:
-            info["nvidia"] = {
-                "name": "NVIDIA NIM",
-                "model": self.nvidia_model,
-                "status": "active",
-                "priority": "fallback-3"
-            }
-        
-        return info
+        parts = (candidates[0].get("content") or {}).get("parts") or []
+        text = "".join(part.get("text", "") for part in parts if isinstance(part, dict))
+        if not text.strip():
+            raise RuntimeError("Gemini returned an empty text response.")
+        return text.strip()
 
-# Global provider instance
-_provider = None
 
-def get_llm_provider() -> LLMProvider:
-    """Get the global LLM provider instance"""
+_provider: GeminiProvider | None = None
+
+
+def get_llm_provider() -> GeminiProvider:
     global _provider
     if _provider is None:
-        _provider = LLMProvider()
+        _provider = GeminiProvider()
     return _provider
 
+
 def is_configured() -> bool:
-    """Check if LLM provider is configured"""
     return get_llm_provider().is_configured()
 
-async def generate_completion(messages: List[Dict[str, str]], **kwargs) -> str:
-    """Generate completion using the configured provider"""
-    provider = get_llm_provider()
-    return await provider.generate_completion(messages, **kwargs)
 
-def get_ai_provider_info() -> Dict[str, Any]:
-    """Get AI provider information"""
-    return get_llm_provider().get_provider_info()
+async def generate_completion(messages: list[dict[str, str]], **kwargs: Any) -> str:
+    return await get_llm_provider().generate_completion(messages, **kwargs)
+
+
+def get_ai_provider_info() -> dict[str, Any]:
+    provider = get_llm_provider()
+    return {
+        "configured_providers": ["gemini"] if provider.is_configured() else [],
+        "default_provider": "gemini",
+        "gemini": {
+            "name": "Google Gemini",
+            "model": provider.model,
+            "status": "configured" if provider.is_configured() else "not_configured",
+            "priority": "primary",
+        },
+    }

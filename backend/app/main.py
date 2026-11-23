@@ -9,67 +9,59 @@ from .startup import initialize_pipeline
 
 
 def create_app() -> FastAPI:
-	# Load .env if present for local dev
-	load_dotenv()
+    # Load .env if present for local development before provider configuration is read.
+    load_dotenv()
 
-	app = FastAPI(title="Nomad AI Backend", version="0.2.0")
+    app = FastAPI(title="Nomad AI Backend", version="0.3.0")
 
-	# CORS configuration - configurable via env
-	origins_raw = os.getenv("CORS_ORIGINS", "").strip()
-	if origins_raw:
-		origins = [o.strip() for o in origins_raw.split(",") if o.strip()]
-	else:
-		origins = ["*"]
+    origins_raw = os.getenv("CORS_ORIGINS", "").strip()
+    origins = [origin.strip() for origin in origins_raw.split(",") if origin.strip()]
+    if not origins:
+        origins = ["http://localhost:3000"]
 
-	app.add_middleware(
-		CORSMiddleware,
-		allow_origins=origins,
-		allow_credentials=True,
-		allow_methods=["*"],
-		allow_headers=["*"],
-	)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-	app.include_router(itineraries.router, prefix="/api/itineraries", tags=["itineraries"])
-	app.include_router(signals.router, prefix="/api/signals", tags=["signals"])
-	app.include_router(memory.router, prefix="/api/memory", tags=["memory"])
-	app.include_router(digest.router, prefix="/api/digest", tags=["digest"])
-	app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
-	app.include_router(plan.router, prefix="/api/plan", tags=["plan"])
+    app.include_router(itineraries.router, prefix="/api/itineraries", tags=["itineraries"])
+    app.include_router(signals.router, prefix="/api/signals", tags=["signals"])
+    app.include_router(memory.router, prefix="/api/memory", tags=["memory"])
+    app.include_router(digest.router, prefix="/api/digest", tags=["digest"])
+    app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+    app.include_router(plan.router, prefix="/api/plan", tags=["plan"])
 
-	# Removed startup pipeline test to prevent timeout issues
-	# Pipeline initializes on-demand when first used
+    @app.get("/healthz")
+    def healthcheck():
+        return {"status": "ok"}
 
-	@app.get("/healthz")
-	def healthcheck():
-		return {"status": "ok"}
+    @app.get("/api/ai-status")
+    def ai_status():
+        """Return configured Gemini provider status without exposing credentials."""
+        configured = bool(os.getenv("GEMINI_API_KEY", "").strip())
+        return {
+            "status": "active" if configured else "configuration_required",
+            "ai_providers": get_ai_provider_info(),
+            "platform": "NomadAI",
+            "version": "0.3.0",
+            "features": [
+                "Google Gemini as the sole AI provider",
+                "Server-side API key handling",
+                "Configurable Gemini model via GEMINI_MODEL",
+                "Multi-turn chat and itinerary generation",
+            ],
+        }
 
-	@app.get("/api/ai-status")
-	def ai_status():
-		"""Get AI provider status and capabilities"""
-		return {
-			"status": "active",
-			"ai_providers": get_ai_provider_info(),
-			"platform": "NomadAI",
-			"version": "3.0.0",
-			"features": [
-				"Groq Integration (Primary - Lightning Fast)",
-				"DeepSeek Integration (Fallback - Capable AI)",
-				"Together.ai Integration (Optional Fallback)",
-				"NVIDIA NIM (Optional Fallback)",
-				"100% AI Generation - Zero Pre-loaded Data",
-				"Unlimited Global Coverage",
-				"Real-time Itinerary Creation",
-				"Free Tier Available"
-			]
-		}
+    @app.get("/api/pipeline-status")
+    def pipeline_status():
+        """Get pipeline status and component health."""
+        from .startup import get_pipeline_status
+        return get_pipeline_status()
 
-	@app.get("/api/pipeline-status")
-	def pipeline_status():
-		"""Get pipeline status and component health"""
-		from .startup import get_pipeline_status
-		return get_pipeline_status()
-
-	return app
+    return app
 
 
 app = create_app()
