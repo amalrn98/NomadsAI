@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { 
   Globe, 
   Shield, 
   Zap, 
-  MapPin, 
-  Calendar, 
-  Users, 
   Crown, 
   Plane, 
   ArrowRight, 
@@ -17,7 +15,6 @@ import {
   Star,
   Building2,
   Compass,
-  Sparkles
 } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
 
@@ -32,21 +29,6 @@ type TravelPlan = {
   budget: string;
   interests: string[];
 };
-
-const WORLD_CITIES = [
-  { name: "New York", country: "United States", code: "NYC", category: "business" },
-  { name: "London", country: "United Kingdom", code: "LON", category: "business" },
-  { name: "Tokyo", country: "Japan", code: "TYO", category: "business" },
-  { name: "Singapore", country: "Singapore", code: "SIN", category: "business" },
-  { name: "Dubai", country: "UAE", code: "DXB", category: "business" },
-  { name: "Paris", country: "France", code: "PAR", category: "culture" },
-  { name: "Barcelona", country: "Spain", code: "BCN", category: "culture" },
-  { name: "Rome", country: "Italy", code: "ROM", category: "culture" },
-  { name: "Bangkok", country: "Thailand", code: "BKK", category: "culture" },
-  { name: "Seoul", country: "South Korea", code: "SEL", category: "tech" },
-  { name: "Bali", country: "Indonesia", code: "DPS", category: "leisure" },
-  { name: "Cape Town", country: "South Africa", code: "CPT", category: "leisure" }
-];
 
 const INTERESTS = [
   { id: "business", label: "Business & Corporate", icon: Building2 },
@@ -76,6 +58,7 @@ const FEATURES = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
   const [travelPlan, setTravelPlan] = useState<TravelPlan>({
     from: "",
     to: "",
@@ -124,8 +107,6 @@ export default function HomePage() {
         interests: travelPlan.interests
       };
 
-      console.log('Submitting travel plan:', travelPlanData);
-
       const response = await fetch(`${API_BASE}/api/plan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -134,13 +115,12 @@ export default function HomePage() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Travel plan generated successfully:', data);
         
         // Store the travel plan data in localStorage for the results page
         localStorage.setItem('travelPlanData', JSON.stringify(data));
         
         // Redirect to results page
-        window.location.href = '/results?id=generated';
+        router.push('/results?id=generated');
       } else {
         const errorData = await response.json();
         console.error('Backend error:', errorData);

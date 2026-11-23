@@ -75,7 +75,7 @@ function ResultsPageContent() {
 
         setError("No travel plan found. Please start planning your journey.");
         setLoading(false);
-      } catch (err) {
+      } catch {
         setError("Failed to load your travel plan. Please try again.");
         setLoading(false);
       }

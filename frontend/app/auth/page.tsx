@@ -21,9 +21,12 @@ export default function AuthPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // One-time read of browser-only URL state (not available during SSR), so it must happen after mount.
+    /* eslint-disable react-hooks/set-state-in-effect */
     const params = new URLSearchParams(window.location.search);
     if (params.get("mode") === "sign-up") setMode("sign-up");
     if (window.location.hash.includes("type=recovery")) setRecovery(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   function changeMode(next: Mode) {

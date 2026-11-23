@@ -101,7 +101,6 @@ const faqs = [
 
 export default function PricingPage() {
 	const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
-	const [selectedTier, setSelectedTier] = useState<string | null>(null);
 
 	const getAnnualPrice = (monthlyPrice: string) => {
 		if (monthlyPrice === "Free") return "Free";
@@ -158,8 +157,6 @@ export default function PricingPage() {
 									? 'border-emerald-400/50 bg-white/10 scale-105 shadow-2xl shadow-emerald-500/25' 
 									: 'border-white/20 bg-white/5 hover:bg-white/10'
 							}`}
-							onMouseEnter={() => setSelectedTier(tier.name)}
-							onMouseLeave={() => setSelectedTier(null)}
 						>
 							{tier.popular && (
 								<div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -232,7 +229,7 @@ export default function PricingPage() {
 
 				{/* Feature Comparison */}
 				<div className="mb-20">
-					<h2 className="text-3xl font-bold text-white text-center mb-12">What's Included</h2>
+					<h2 className="text-3xl font-bold text-white text-center mb-12">What&apos;s Included</h2>
 					<div className="bg-white/5 backdrop-blur rounded-3xl border border-white/10 overflow-hidden">
 						<div className="p-8">
 							<div className="grid grid-cols-4 gap-8 text-center">
@@ -317,7 +314,7 @@ export default function PricingPage() {
 				{/* Final CTA */}
 				<div className="text-center mt-20">
 					<h2 className="text-3xl font-bold text-white mb-6">Ready to Transform Your Travel?</h2>
-					<p className="text-xl text-white/70 mb-8">Join thousands of travelers who've upgraded their journey with AI.</p>
+					<p className="text-xl text-white/70 mb-8">Join thousands of travelers who&apos;ve upgraded their journey with AI.</p>
 					<div className="flex flex-col sm:flex-row gap-4 justify-center">
 						<button className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white rounded-2xl font-semibold transition-all shadow-lg">
 							Start Free Trial

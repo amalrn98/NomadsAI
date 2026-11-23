@@ -20,7 +20,7 @@ const SAMPLE_IMAGES = [
 export default function MemoriesPage() {
   const supabase = useMemo(() => getSupabaseClient(), []);
   const [session, setSession] = useState<Session | null>(null);
-  const [authReady, setAuthReady] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -35,26 +35,30 @@ export default function MemoriesPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!supabase) { setAuthReady(true); return; }
+    if (!supabase) return;
     let active = true;
     supabase.auth.getSession().then(({ data }) => {
-      if (active) { setSession(data.session); setAuthReady(true); }
+      if (active) { setSession(data.session); setAuthChecked(true); }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
-      setAuthReady(true);
+      setAuthChecked(true);
     });
     return () => { active = false; subscription.unsubscribe(); };
   }, [supabase]);
 
+  // Without a configured Supabase client there is nothing to wait for.
+  const authReady = !supabase || authChecked;
+  const accessToken = session?.access_token;
+
   useEffect(() => {
-    if (!session?.access_token) { setMemories([]); return; }
+    if (!accessToken) return;
     const controller = new AbortController();
     async function load() {
       setError("");
       try {
         const response = await fetch(API_BASE + "/api/memory/", {
-          headers: { Authorization: "Bearer " + session!.access_token },
+          headers: { Authorization: "Bearer " + accessToken },
           signal: controller.signal,
         });
         if (!response.ok) throw new Error(response.status === 401 ? "Your session expired. Sign in again." : "Could not load travel memories.");
@@ -65,7 +69,7 @@ export default function MemoriesPage() {
     }
     load();
     return () => controller.abort();
-  }, [session?.access_token]);
+  }, [accessToken]);
 
   async function addMemory(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

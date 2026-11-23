@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Plane, Sparkles, Crown, Diamond, Menu, X } from 'lucide-react';
 import { Crimson_Text } from 'next/font/google';
 
@@ -33,42 +34,42 @@ export default function Navigation() {
 
 					{/* Desktop Navigation */}
 					<nav className="hidden md:flex items-center gap-8">
-						<a href="/" className="group flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200">
+						<Link href="/" className="group flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200">
 							<span className="relative font-medium">
 								Home
 								<span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-accent group-hover:w-full transition-all duration-300"></span>
 							</span>
-						</a>
-						<a href="/chat" className="group flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200">
+						</Link>
+						<Link href="/chat" className="group flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200">
 							<Sparkles className="w-4 h-4 text-accent-400" />
 							<span className="relative font-medium">
 								AI Concierge
 								<span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-accent group-hover:w-full transition-all duration-300"></span>
 							</span>
-						</a>
-						<a href="/memories" className="group flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200">
+						</Link>
+						<Link href="/memories" className="group flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200">
 							<span className="relative font-medium">
 								Memories
 								<span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-accent group-hover:w-full transition-all duration-300"></span>
 							</span>
-						</a>
-						<a href="/auth" className="group flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200">
+						</Link>
+						<Link href="/auth" className="group flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200">
 							<span className="relative font-medium">
 								Account
 								<span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-accent group-hover:w-full transition-all duration-300"></span>
 							</span>
-						</a>
+						</Link>
 					</nav>
 
 					{/* CTA and Mobile Menu Button */}
 					<div className="flex items-center gap-4">
-						<a 
+						<Link 
 							href="/pricing" 
 							className="hidden md:flex items-center gap-2 px-6 py-2.5 bg-gradient-accent hover:shadow-glow text-gray-900 rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 font-semibold text-sm"
 						>
 							<Crown className="w-4 h-4" />
 							Get Started
-						</a>
+						</Link>
 						<button 
 							className="md:hidden p-2 text-gray-400 hover:text-accent-400 glass rounded-lg transition-colors duration-200"
 							onClick={toggleMobileMenu}
@@ -83,23 +84,23 @@ export default function Navigation() {
 				{isMobileMenuOpen && (
 					<div className="md:hidden py-4 border-t border-gray-700/50 animate-slide-in">
 						<nav className="flex flex-col space-y-4">
-							<a href="/" className="text-gray-300 hover:text-accent-400 transition-colors duration-200 py-2">
+							<Link href="/" className="text-gray-300 hover:text-accent-400 transition-colors duration-200 py-2">
 								Home
-							</a>
-							<a href="/chat" className="flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200 py-2">
+							</Link>
+							<Link href="/chat" className="flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200 py-2">
 								<Sparkles className="w-4 h-4 text-accent-400" />
 								AI Concierge
-							</a>
-							<a href="/memories" className="text-gray-300 hover:text-accent-400 transition-colors duration-200 py-2">
+							</Link>
+							<Link href="/memories" className="text-gray-300 hover:text-accent-400 transition-colors duration-200 py-2">
 								Memories
-							</a>
-							<a href="/auth" className="text-gray-300 hover:text-accent-400 transition-colors duration-200 py-2">
+							</Link>
+							<Link href="/auth" className="text-gray-300 hover:text-accent-400 transition-colors duration-200 py-2">
 								Account
-							</a>
-							<a href="/pricing" className="flex items-center gap-2 px-4 py-2 bg-gradient-accent text-gray-900 rounded-lg font-semibold text-sm mt-2">
+							</Link>
+							<Link href="/pricing" className="flex items-center gap-2 px-4 py-2 bg-gradient-accent text-gray-900 rounded-lg font-semibold text-sm mt-2">
 								<Crown className="w-4 h-4" />
 								Get Started
-							</a>
+							</Link>
 						</nav>
 					</div>
 				)}
