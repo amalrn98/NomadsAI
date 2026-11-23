@@ -27,6 +27,26 @@ class MemoryCreate(BaseModel):
     companions: list[str] = Field(default_factory=list, max_length=20)
 
 
+
+
+class MemoryUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str | None = Field(default=None, min_length=1, max_length=160)
+    content: str | None = Field(default=None, max_length=10000)
+    destination: str | None = Field(default=None, min_length=1, max_length=160)
+    image_url: HttpUrl | None = None
+    mood: str | None = Field(default=None, max_length=32)
+    weather: str | None = Field(default=None, max_length=32)
+    companions: list[str] | None = Field(default=None, max_length=20)
+
+    def changes(self) -> dict:
+        values = self.model_dump(exclude_unset=True, mode="json")
+        if not values:
+            raise HTTPException(status_code=400, detail="Provide at least one field to update.")
+        return values
+
+
 class MemoryResponse(BaseModel):
     id: uuid.UUID
     title: str
@@ -168,3 +188,25 @@ async def delete_memory(
     if not rows:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Travel memory not found.")
     return {"deleted": True}
+
+
+@router.patch("/{memory_id}", response_model=MemoryResponse)
+async def update_memory(
+    memory_id: uuid.UUID,
+    payload: MemoryUpdate,
+    user: Annotated[dict, Depends(get_current_user)],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+):
+    rows = await _supabase_request(
+        "PATCH",
+        _token(credentials),
+        params={
+            "id": f"eq.{memory_id}",
+            "user_id": f"eq.{user['id']}",
+            "select": "id,title,content,destination,created_at,image_url,mood,weather,companions",
+        },
+        payload=payload.changes(),
+    )
+    if not rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Travel memory not found.")
+    return rows[0]
