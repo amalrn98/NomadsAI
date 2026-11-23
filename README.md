@@ -14,7 +14,7 @@ The deployment target is free-tier infrastructure. Free services can sleep, impo
 
 | Path | Responsibility |
 | --- | --- |
-| frontend/ | Next.js App Router application, public pages, auth UI, chat, memories, settings |
+| frontend/ | Next.js App Router application, public pages, auth UI, chat, memories, digest, pricing |
 | backend/app/routers/ | FastAPI HTTP endpoints |
 | backend/app/services/ | Gemini, search, email, and supporting services |
 | backend/app/pipeline/ | Itinerary generation and destination knowledge |

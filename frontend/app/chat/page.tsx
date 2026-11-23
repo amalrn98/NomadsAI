@@ -33,7 +33,7 @@ export default function ChatPage() {
 	]);
 	const [inputMessage, setInputMessage] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
-	const [travelContext, setTravelContext] = useState<TravelContext>({});
+	const [travelContext] = useState<TravelContext>({});
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
 	const scrollToBottom = () => {
