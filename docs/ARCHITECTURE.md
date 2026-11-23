@@ -1,0 +1,70 @@
+# Architecture
+
+This guide describes the current high-level structure and security boundaries. Confirm details in source and tests before relying on them for implementation changes.
+
+## System context
+Browser -> Vercel frontend (Next.js) -> Render backend (FastAPI) -> Google Gemini.
+The browser also authenticates with Supabase Auth. Protected backend memory requests validate the user's Supabase bearer token and access Supabase PostgreSQL under RLS. FastAPI can use Upstash Redis for shared rate-limit storage and an SMTP provider for optional email.
+
+## Frontend
+frontend/ is a Next.js App Router application. Routes are in frontend/app/, shared UI in frontend/components/, and the browser Supabase client in frontend/lib/.
+
+The browser reads NEXT_PUBLIC_API_BASE, NEXT_PUBLIC_SUPABASE_URL, and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. Supabase client uses PKCE, persists sessions, refreshes tokens, and detects auth callbacks. NEXT_PUBLIC_ values are public by design.
+
+## Backend
+backend/app/main.py constructs FastAPI, configures CORS and rate limiting, and mounts routers:
+- /api/itineraries
+- /api/signals
+- /api/digest
+- /api/chat
+- /api/plan
+- /api/memory
+
+Interactive OpenAPI docs are at /docs.
+
+## AI
+Gemini calls are server-side through backend services. GEMINI_API_KEY must never reach the browser or source control. GEMINI_MODEL selects the model, with code default gemini-3.8-flash. /api/ai-status reports configuration, not successful live generation.
+
+## Identity and user data
+Supabase Auth is the identity provider. Protected memory requests carry a bearer access token. backend/app/auth.py validates it through Supabase Auth /auth/v1/user and derives the user ID from the returned identity.
+
+backend/app/routers/memory.py forwards the user's access token to Supabase Data API. public.travel_memories references auth.users(id) with ON DELETE CASCADE and uses RLS policies scoped to auth.uid().
+
+Invariants:
+1. Never trust user_id supplied in request input as identity.
+2. Derive ownership from validated Supabase identity.
+3. Keep RLS enabled and preserve per-user policies.
+4. Never use a service-role key in the browser.
+5. Never broaden grants or policies to bypass an authorization failure.
+
+The SQL migrations are authoritative. Cross-account behavior still requires live verification tracked by issue #13.
+
+## Rate limiting
+backend/app/rate_limit.py uses SlowAPI. It selects RATE_LIMIT_STORAGE_URI, then REDIS_URL, and falls back to memory:// if neither is set. In-memory limits are process-local, reset on restart, and are not shared across instances. Treat that fallback as local-development only. Production fail-closed behavior is tracked by issue #16.
+
+## Travel data and provenance
+backend/app/mock_data/ contains static demonstration fixtures. These are not live flight, hotel, event, price, inventory, or booking data. Preserve sample/unverified labels.
+
+Web search results include source context but are not automatically verified. Do not present snippets as confirmed facts or live availability. Users should check primary sources for time-sensitive details.
+
+The destination knowledge pipeline may build local SQLite/cache state. Render filesystems are ephemeral, so this state must be rebuildable. Never store durable user-owned memories in SQLite, JSON fixtures, or Render filesystem.
+
+## Email
+The email service reads SMTP settings from backend environment variables. Delivery requires SMTP host, username, password, and sender configuration. Do not claim delivery works until tested. Never expose SMTP credentials to frontend.
+
+## Data ownership
+- User identity/session: Supabase Auth.
+- Saved travel memories: Supabase PostgreSQL.
+- Destination cache: local generated SQLite/cache, rebuildable and ephemeral.
+- Demo fixtures: repository JSON files, version-controlled samples.
+- Rate-limit counters: Upstash Redis when configured, otherwise process memory.
+- Frontend assets: Vercel deployment artifact.
+
+## Operational caveats
+- Render free services can sleep and local storage is ephemeral.
+- Free-tier quotas and limits can change.
+- /healthz is a process health check, not end-to-end readiness.
+- A configured Gemini key does not prove model requests succeed.
+- A configured Redis URL does not prove connectivity or fail-closed behavior.
+- Signup redirects, RLS isolation, and account deletion require deployment-level verification.
+See DEPLOYMENT.md for release configuration.
