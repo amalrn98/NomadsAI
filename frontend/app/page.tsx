@@ -229,6 +229,7 @@ export default function HomePage() {
               <Button
                 size="xl"
                 variant="outline"
+                onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
                 className="border-white/30 text-white hover:bg-white/10"
               >
                 Explore features
