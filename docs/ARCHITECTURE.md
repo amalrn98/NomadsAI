@@ -40,7 +40,7 @@ Invariants:
 The SQL migrations are authoritative. Cross-account behavior still requires live verification tracked by issue #13.
 
 ## Rate limiting
-backend/app/rate_limit.py uses SlowAPI. It selects RATE_LIMIT_STORAGE_URI, then REDIS_URL, and falls back to memory:// if neither is set. In-memory limits are process-local, reset on restart, and are not shared across instances. Treat that fallback as local-development only. Production fail-closed behavior is tracked by issue #16.
+backend/app/rate_limit.py uses SlowAPI. It selects RATE_LIMIT_STORAGE_URI, then REDIS_URL. In production (RENDER=true, or APP_ENV/ENVIRONMENT=production) the app refuses to start without Redis unless ALLOW_IN_MEMORY_RATE_LIMIT=true is set. Outside production it falls back to memory://, which is process-local and development-only. Callers are identified by socket address unless TRUSTED_PROXY_HOPS is set, in which case the X-Forwarded-For entry appended by the trusted proxy is used (leftmost entries are client-controlled and never trusted). Behind a shared proxy without this setting, all clients may share one rate-limit bucket.
 
 ## Travel data and provenance
 backend/app/mock_data/ contains static demonstration fixtures. These are not live flight, hotel, event, price, inventory, or booking data. Preserve sample/unverified labels.
@@ -50,7 +50,7 @@ Web search results include source context but are not automatically verified. Do
 The destination knowledge pipeline may build local SQLite/cache state. Render filesystems are ephemeral, so this state must be rebuildable. Never store durable user-owned memories in SQLite, JSON fixtures, or Render filesystem.
 
 ## Email
-The email service reads SMTP settings from backend environment variables. Delivery requires SMTP host, username, password, and sender configuration. Do not claim delivery works until tested. Never expose SMTP credentials to frontend.
+The email service reads SMTP settings from backend environment variables. Delivery requires SMTP host, username, password, and sender configuration. Do not claim delivery works until tested. Never expose SMTP credentials to frontend. Without SMTP configured, local development writes to a file outbox; in production the send fails with an error instead of pretending to succeed. /api/digest/send requires a signed-in session and only sends to the verified email of that account; the client cannot choose a recipient. GET /api/pipeline-status is a static check and never calls Gemini.
 
 ## Data ownership
 - User identity/session: Supabase Auth.

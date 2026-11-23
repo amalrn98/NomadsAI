@@ -34,7 +34,7 @@ Maintain NomadsAI, an AI-assisted travel planning application. Prefer small, rev
 - Backend: FastAPI on Python 3.11, Dockerfile in backend/, hosted on Render.
 - Identity and database: Supabase Auth and PostgreSQL. public.travel_memories uses RLS scoped to auth.uid().
 - AI: Google Gemini, called server-side. The API key must never reach the browser.
-- Rate limiting: SlowAPI uses Redis when RATE_LIMIT_STORAGE_URI or REDIS_URL is configured. Current code falls back to memory:// when neither exists. This is process-local and unsuitable for horizontally scaled production. Issue #16 tracks fail-closed behavior.
+- Rate limiting: SlowAPI uses Redis when RATE_LIMIT_STORAGE_URI or REDIS_URL is configured. In production the app fails closed at startup without Redis unless ALLOW_IN_MEMORY_RATE_LIMIT=true. Outside production it falls back to process-local memory://. Set TRUSTED_PROXY_HOPS only after verifying the real proxy chain. Issue #16 tracks remaining work (smoke-testing against real Upstash).
 - Local destination knowledge and fixtures are not authoritative live travel inventory.
 - Render free instances may sleep and local filesystem state is ephemeral. Never store durable user data on Render filesystem.
 
@@ -77,7 +77,7 @@ This list was current as of 2026-11-23. Re-check GitHub before acting.
 - #17: safe production smoke tests for Gemini and chat streaming remain. /healthz alone is insufficient.
 - #18: initial travel-source provenance and fixture labeling work was merged. Re-check issue status.
 - #19: CodeQL, Gitleaks, pip-audit, and npm audit workflows exist. Verify repository-level secret scanning and push protection separately.
-- #20: email digest abuse controls require review, including opt-in, quotas, idempotency, and bot/abuse protection.
+- #20: digest now requires sign-in and sends only to the account email. Remaining: per-user quotas/idempotency, opt-in preferences, and verifying the email provider.
 This is not necessarily the complete or current backlog. Query GitHub issues and PRs at the start of a task.
 
 ## Product and operational constraints

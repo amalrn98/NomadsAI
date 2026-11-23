@@ -15,13 +15,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -50,12 +49,6 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Refresh and patch frontend dependency lockfile
-        working-directory: frontend
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          npm audit fix --package-lock-only --audit-level=high
-
       - name: Install frontend dependencies from lockfile
         working-directory: frontend
         run: npm ci
@@ -69,16 +62,3 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE: http://localhost:8000
         run: npm run build
-
-      - name: Commit refreshed lockfile
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add frontend/package-lock.json
-          if git diff --cached --quiet; then
-            echo "No lockfile changes to commit."
-            exit 0
-          fi
-          git commit -m "chore: refresh frontend dependency lockfile"
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

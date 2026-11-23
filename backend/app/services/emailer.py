@@ -1,7 +1,10 @@
 import os
 import smtplib
 from email.message import EmailMessage
-from datetime import datetime
+from datetime import datetime, timezone
+import uuid
+
+from ..runtime import is_production
 
 
 SMTP_HOST = os.getenv("SMTP_HOST")
@@ -11,10 +14,15 @@ SMTP_PASS = os.getenv("SMTP_PASS")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "no-reply@nomad-ai.local")
 
 
+class EmailNotConfiguredError(RuntimeError):
+	"""Raised when no SMTP server is configured in a production environment."""
+
+
 def _write_outbox(to: str, subject: str, body: str):
 	out_dir = os.path.abspath(os.getenv("OUTBOX_DIR", "./outbox"))
 	os.makedirs(out_dir, exist_ok=True)
-	fname = datetime.utcnow().strftime("%Y%m%d-%H%M%S") + "-" + to.replace("@", "_at_") + ".txt"
+	# The filename never includes user-supplied data (the recipient is written inside the file).
+	fname = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:12] + ".txt"
 	path = os.path.join(out_dir, fname)
 	with open(path, "w", encoding="utf-8") as f:
 		f.write(f"To: {to}\nSubject: {subject}\n\n{body}\n")
@@ -22,6 +30,9 @@ def _write_outbox(to: str, subject: str, body: str):
 
 def send_email(to: str, subject: str, body: str):
 	if not SMTP_HOST or not SMTP_USER or not SMTP_PASS:
+		if is_production():
+			# Never pretend an email was sent: the production filesystem is ephemeral.
+			raise EmailNotConfiguredError("SMTP is not configured.")
 		# Fallback to file outbox for local/demo
 		_write_outbox(to, subject, body)
 		return
@@ -32,7 +43,7 @@ def send_email(to: str, subject: str, body: str):
 	msg["To"] = to
 	msg.set_content(body)
 
-	with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+	with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
 		server.starttls()
 		server.login(SMTP_USER, SMTP_PASS)
 		server.send_message(msg)
