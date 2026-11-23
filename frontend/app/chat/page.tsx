@@ -53,53 +53,70 @@ export default function ChatPage() {
 			content: inputMessage,
 			timestamp: new Date()
 		};
+		const assistantId = (Date.now() + 1).toString();
+		const assistantPlaceholder: Message = {
+			id: assistantId,
+			role: "assistant",
+			content: "",
+			timestamp: new Date()
+		};
+		const requestMessages = [
+			...messages.map(msg => ({ role: msg.role, content: msg.content })),
+			{ role: "user" as const, content: inputMessage }
+		];
 
-		setMessages(prev => [...prev, userMessage]);
+		setMessages(prev => [...prev, userMessage, assistantPlaceholder]);
 		setInputMessage("");
 		setIsLoading(true);
 
 		try {
-			const response = await fetch(`${API_BASE}/api/chat`, {
+			const response = await fetch(`${API_BASE}/api/chat/stream`, {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					messages: [
-						...messages.map(msg => ({
-							role: msg.role,
-							content: msg.content
-						})),
-						{
-							role: "user",
-							content: inputMessage
-						}
-					],
+					messages: requestMessages,
+					destination: travelContext.destination,
 					travel_context: travelContext
 				}),
 			});
-
-			if (response.ok) {
-				const data = await response.json();
-				const assistantMessage: Message = {
-					id: (Date.now() + 1).toString(),
-					role: "assistant",
-					content: data.reply || "I'm sorry, I couldn't process your request. Please try again.",
-					timestamp: new Date()
-				};
-				setMessages(prev => [...prev, assistantMessage]);
-			} else {
-				throw new Error("Failed to get response");
+			if (!response.ok || !response.body) {
+				throw new Error("The chat service could not start a response.");
 			}
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let buffer = "";
+			const consumeEvent = (event: string) => {
+				const dataLine = event.split("\\n").find(line => line.startsWith("data:"));
+				if (!dataLine) return;
+				const payload = JSON.parse(dataLine.slice(5).trim());
+				if (payload.type === "content" && typeof payload.content === "string") {
+					setMessages(prev => prev.map(message =>
+						message.id === assistantId
+							? { ...message, content: message.content + payload.content }
+							: message
+					));
+				} else if (payload.type === "error") {
+					throw new Error(payload.error || "The chat stream failed.");
+				}
+			};
+
+			while (true) {
+				const { value, done } = await reader.read();
+				buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+				const events = buffer.split("\\n\\n");
+				buffer = events.pop() || "";
+				events.forEach(consumeEvent);
+				if (done) break;
+			}
+			if (buffer.trim()) consumeEvent(buffer);
 		} catch (error) {
 			console.error("Error sending message:", error);
-			const errorMessage: Message = {
-				id: (Date.now() + 1).toString(),
-				role: "assistant",
-				content: "I'm experiencing technical difficulties. Please try again in a moment.",
-				timestamp: new Date()
-			};
-			setMessages(prev => [...prev, errorMessage]);
+			setMessages(prev => prev.map(message =>
+				message.id === assistantId
+					? { ...message, content: "I'm experiencing technical difficulties. Please try again in a moment." }
+					: message
+			));
 		} finally {
 			setIsLoading(false);
 		}
