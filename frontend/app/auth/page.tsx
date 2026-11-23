@@ -21,13 +21,11 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [resetSent, setResetSent] = useState(false);
 
   function changeMode(next: Mode) {
     setMode(next);
     setError("");
     setMessage("");
-    setResetSent(false);
     window.history.replaceState(null, "", next === "sign-up" ? "/auth?mode=sign-up" : "/auth");
   }
 
@@ -84,7 +82,6 @@ export default function AuthPage() {
         redirectTo: window.location.origin + "/auth",
       });
       if (resetError) throw resetError;
-      setResetSent(true);
       setMessage("If an account exists for this address, a password reset email is on its way.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send the reset email.");
