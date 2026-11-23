@@ -4,7 +4,7 @@ import asyncio
 import json
 import os
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, Response
 
 from ..rate_limit import limiter
 from ..services.web_search import search_news
@@ -23,6 +23,7 @@ def _load_json(filename: str):
 @limiter.limit("30/minute")
 async def get_signals(
     request: Request,
+    response: Response,
     destination: Optional[str] = None,
     region: Optional[str] = None,
     limit: int = Query(50, ge=1, le=200),
