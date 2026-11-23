@@ -107,3 +107,39 @@ def test_memory_delete_filters_by_verified_subject_and_returns_404_for_no_match(
     assert captured["method"] == "DELETE"
     assert captured["params"]["id"] == f"eq.{memory_id}"
     assert captured["params"]["user_id"] == f"eq.{USER_ID}"
+
+
+def test_memory_update_filters_by_verified_subject(monkeypatch):
+    captured = {}
+    memory_id = str(uuid.uuid4())
+
+    async def fake_request(method, token, *, params=None, payload=None):
+        captured.update(method=method, token=token, params=params, payload=payload)
+        return [{
+            "id": memory_id,
+            "title": "Updated trip",
+            "content": "",
+            "destination": "Kochi",
+            "created_at": "2026-11-23T10:00:00Z",
+            "image_url": None,
+            "mood": None,
+            "weather": None,
+            "companions": [],
+        }]
+
+    monkeypatch.setattr(memory_router, "_supabase_request", fake_request)
+    _auth_overrides()
+    try:
+        response = TestClient(app).patch(
+            f"/api/memory/{memory_id}",
+            headers={"Authorization": "Bearer test-access-token"},
+            json={"title": "Updated trip"},
+        )
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 200, response.text
+    assert captured["method"] == "PATCH"
+    assert captured["params"]["id"] == f"eq.{memory_id}"
+    assert captured["params"]["user_id"] == f"eq.{USER_ID}"
+    assert captured["payload"] == {"title": "Updated trip"}
