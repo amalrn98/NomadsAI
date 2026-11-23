@@ -12,6 +12,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _activity_text(value):
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    if isinstance(value, dict):
+        title = value.get("title") or value.get("name")
+        description = value.get("description")
+        if isinstance(title, str) and title.strip():
+            return f"{title.strip()}: {description.strip()}" if isinstance(description, str) and description.strip() else title.strip()
+    raise ValueError("Each itinerary activity must contain readable text.")
+
+
 @router.post("/", response_model=TravelPlanResponse)
 @limiter.limit("3/minute")
 async def plan_travel(request: Request, response: Response, payload: TravelPlanRequest):
@@ -38,15 +49,36 @@ async def plan_travel(request: Request, response: Response, payload: TravelPlanR
             departure_date=payload.departure_date,
             return_date=payload.return_date,
         )
+        raw_days = data.get("itinerary")
+        if not isinstance(raw_days, list) or len(raw_days) != days:
+            raise ValueError("The itinerary response does not contain the requested number of days.")
+        itinerary = []
+        for item in raw_days:
+            if not isinstance(item, dict):
+                raise ValueError("Invalid itinerary day.")
+            activities = item.get("activities")
+            if not isinstance(activities, list) or not activities:
+                raise ValueError("An itinerary day has no valid activities.")
+            itinerary.append({
+                "day": item.get("day"),
+                "title": item.get("theme") or item.get("title"),
+                "activities": [_activity_text(activity) for activity in activities],
+            })
+
+        first_day = raw_days[0]
+        highlights = data.get("highlights") or first_day.get("highlights")
+        if not isinstance(highlights, list) or not highlights or any(not isinstance(item, str) for item in highlights):
+            raise ValueError("The itinerary response has no valid highlights.")
+
         return TravelPlanResponse(
             summary=data["summary"],
-            itinerary=[{"day": item["day"], "title": item["theme"], "activities": item["activities"]} for item in data["itinerary"]],
-            highlights=data["itinerary"][0]["highlights"],
+            itinerary=itinerary,
+            highlights=highlights,
             estimated_budget=data["estimated_budget"],
             cultural_insights=data["cultural_insights"],
             local_recommendations=data["local_recommendations"],
             travel_tips=data["travel_tips"],
-            ai_provider=data["ai_provider"],
+            ai_provider=data.get("ai_provider", "Google Gemini"),
             from_city=payload.from_city,
             destination=payload.destination,
             total_days=days,
