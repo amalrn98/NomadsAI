@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Compass, Eye, EyeOff, Globe2, MapPin, Sparkles } from "lucide-react";
@@ -11,10 +11,8 @@ type Mode = "sign-in" | "sign-up";
 export default function AuthPage() {
   const supabase = useMemo(() => getSupabaseClient(), []);
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>(() =>
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mode") === "sign-up"
-      ? "sign-up" : "sign-in"
-  );
+  const [mode, setMode] = useState<Mode>("sign-in");
+  const [recovery, setRecovery] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -22,8 +20,15 @@ export default function AuthPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "sign-up") setMode("sign-up");
+    if (window.location.hash.includes("type=recovery")) setRecovery(true);
+  }, []);
+
   function changeMode(next: Mode) {
     setMode(next);
+    setRecovery(false);
     setError("");
     setMessage("");
     window.history.replaceState(null, "", next === "sign-up" ? "/auth?mode=sign-up" : "/auth");
@@ -39,7 +44,14 @@ export default function AuthPage() {
     }
     setBusy(true);
     try {
-      if (mode === "sign-in") {
+      if (recovery) {
+        const { error: authError } = await supabase.auth.updateUser({ password });
+        if (authError) throw authError;
+        setRecovery(false);
+        setPassword("");
+        setMessage("Password updated. Sign in with your new password.");
+        window.history.replaceState(null, "", "/auth");
+      } else if (mode === "sign-in") {
         const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
         if (authError) throw authError;
         router.replace("/memories");
@@ -104,7 +116,7 @@ export default function AuthPage() {
               <Sparkles className="h-4 w-4" /> THOUGHTFUL TRAVEL STARTS HERE
             </span>
             <h1 className="max-w-lg text-5xl font-semibold leading-[1.08] tracking-tight xl:text-6xl">
-              {mode === "sign-up" ? "Make room for the journey." : "Pick up where you left off."}
+              {recovery ? "Set a new password." : mode === "sign-up" ? "Make room for the journey." : "Pick up where you left off."}
             </h1>
             <p className="mt-7 max-w-md text-lg leading-8 text-[#C3D4CE]">
               {mode === "sign-up"
@@ -148,12 +160,12 @@ export default function AuthPage() {
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E2EEE8] text-[#14796E]">
                 {mode === "sign-up" ? <Compass className="h-6 w-6" /> : <Globe2 className="h-6 w-6" />}
               </div>
-              <p className="text-sm font-semibold text-[#14796E]">{mode === "sign-up" ? "Your next journey starts here" : "Welcome back"}</p>
+              <p className="text-sm font-semibold text-[#14796E]">{recovery ? "Secure your account" : mode === "sign-up" ? "Your next journey starts here" : "Welcome back"}</p>
               <h2 className="mt-2 text-4xl font-semibold tracking-tight text-[#163238]">
-                {mode === "sign-up" ? "Create your account" : "Sign in to NomadsAI"}
+                {recovery ? "Choose a new password" : mode === "sign-up" ? "Create your account" : "Sign in to NomadsAI"}
               </h2>
               <p className="mt-3 text-base leading-7 text-[#667A79]">
-                {mode === "sign-up"
+                {recovery ? "Your reset link is valid. Choose a new password to finish." : mode === "sign-up"
                   ? "Save your travel plans and keep your memories together."
                   : "Access your saved plans and private travel memories."}
               </p>
@@ -190,10 +202,10 @@ export default function AuthPage() {
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </span>
-                {mode === "sign-up" && <span className="mt-2 block text-xs font-normal text-[#84958F]">Use at least 8 characters.</span>}
+                {(mode === "sign-up" || recovery) && <span className="mt-2 block text-xs font-normal text-[#84958F]">Use at least 8 characters.</span>}
               </label>
 
-              {mode === "sign-in" && (
+              {mode === "sign-in" && !recovery && (
                 <div className="flex justify-end">
                   <button type="button" onClick={sendPasswordReset} disabled={busy}
                     className="text-sm font-semibold text-[#14796E] transition hover:text-[#105F57] disabled:opacity-50">
@@ -207,18 +219,18 @@ export default function AuthPage() {
 
               <button type="submit" disabled={busy || !supabase}
                 className="group flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#14796E] px-5 font-semibold text-white shadow-sm transition hover:bg-[#105F57] focus:outline-none focus:ring-4 focus:ring-[#14796E]/20 disabled:cursor-not-allowed disabled:opacity-50">
-                {busy ? "Please wait…" : mode === "sign-in" ? "Sign in" : "Create account"}
+                {busy ? "Please wait…" : recovery ? "Update password" : mode === "sign-in" ? "Sign in" : "Create account"}
                 {!busy && <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />}
               </button>
               {!supabase && <p className="text-xs text-amber-700">Account services are not configured for this deployment yet.</p>}
             </form>
 
             <p className="mt-7 text-center text-sm text-[#667A79]">
-              {mode === "sign-in" ? "New to NomadsAI?" : "Already have an account?"}{" "}
+              {!recovery && <>{mode === "sign-in" ? "New to NomadsAI?" : "Already have an account?"}{" "}
               <button type="button" onClick={() => changeMode(mode === "sign-in" ? "sign-up" : "sign-in")}
                 className="font-semibold text-[#14796E] hover:text-[#105F57]">
                 {mode === "sign-in" ? "Create an account" : "Sign in"}
-              </button>
+              </button></>}
             </p>
             <p className="mt-10 flex items-center justify-center gap-2 text-center text-xs text-[#84958F]">
               <MapPin className="h-3.5 w-3.5" /> Your travel memories remain private to your account.
