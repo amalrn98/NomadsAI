@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
@@ -69,13 +69,13 @@ def _stream_response(req: ChatRequest) -> StreamingResponse:
 
 @router.post("/stream")
 @limiter.limit("5/minute")
-async def chat_stream_endpoint(request: Request, req: ChatRequest):
+async def chat_stream_endpoint(request: Request, response: Response, req: ChatRequest):
     return _stream_response(req)
 
 
 @router.post("/")
 @limiter.limit("8/minute")
-async def chat_endpoint(request: Request, req: ChatRequest):
+async def chat_endpoint(request: Request, response: Response, req: ChatRequest):
     if req.stream:
         return _stream_response(req)
 
