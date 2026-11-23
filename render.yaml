@@ -8,8 +8,6 @@ services:
   rootDir: backend
   autoDeploy: true
   envVars:
-  - key: DATABASE_URL
-    value: sqlite:///./nomad_ai.db
   - key: GEMINI_API_KEY
     sync: false
   - key: GEMINI_MODEL
