@@ -2,7 +2,7 @@ from app.main import app
 
 
 def test_persistent_memory_routes_are_not_exposed():
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi()["paths"])
     assert not any(path.startswith("/api/memory") for path in paths)
 
 
