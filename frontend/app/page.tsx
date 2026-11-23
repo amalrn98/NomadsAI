@@ -60,17 +60,17 @@ const FEATURES = [
   {
     icon: Globe,
     title: "AI-Powered Planning",
-    description: "Advanced NVIDIA GPT-OSS-120B model provides intelligent, context-aware travel recommendations tailored to your preferences."
+    description: "Google Gemini provides conversational travel planning and destination recommendations tailored to your preferences."
   },
   {
     icon: Shield,
     title: "Enterprise Security",
-    description: "Bank-grade security and compliance for business travel planning with data protection and privacy controls."
+    description: "Account-based travel memories use Supabase authentication and database row-level security. Security features are described according to their implemented controls."
   },
   {
     icon: Zap,
     title: "Real-time Intelligence",
-    description: "Live updates on weather, events, local insights, and market conditions for informed travel decisions."
+    description: "Source-linked travel research and destination context, with sample data clearly distinguished from live availability."
   }
 ];
 
@@ -186,7 +186,7 @@ export default function HomePage() {
                 AI-Powered Travel Intelligence
               </h1>
               <p className="text-hero-subtitle text-slate-300 max-w-3xl mx-auto">
-                Enterprise-grade travel planning powered by NVIDIA's advanced AI. 
+                Travel planning and destination research powered by Google Gemini. 
                 Get intelligent recommendations that understand your professional and personal travel needs.
               </p>
             </motion.div>
