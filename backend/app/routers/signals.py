@@ -76,10 +76,11 @@ async def get_signals(
         date_str = item.get("date") or item.get("start_date") or item.get("found_at")
         if date_str:
             try:
-                return datetime.fromisoformat(date_str)
-            except (TypeError, ValueError):
+                normalized = date_str.replace("Z", "+00:00")
+                return datetime.fromisoformat(normalized).timestamp()
+            except (AttributeError, TypeError, ValueError, OverflowError):
                 pass
-        return datetime.min
+        return 0.0
 
     filtered.sort(key=sort_key, reverse=True)
     return filtered[:limit]
