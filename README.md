@@ -46,7 +46,7 @@ python -m venv .venv
 # Windows: .venv\\Scripts\\activate
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
+cp ../.env.example .env
 # Add GEMINI_API_KEY and SUPABASE_PUBLISHABLE_KEY to .env
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
