@@ -32,6 +32,10 @@ def create_app() -> FastAPI:
     app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
     app.include_router(plan.router, prefix="/api/plan", tags=["plan"])
 
+    @app.get("/")
+    def root():
+        return {"service": "NomadsAI backend", "status": "ok", "docs": "/docs", "health": "/healthz"}
+
     @app.get("/healthz")
     def healthcheck():
         return {"status": "ok"}
