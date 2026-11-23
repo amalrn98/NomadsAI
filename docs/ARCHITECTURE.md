@@ -47,15 +47,14 @@ backend/app/mock_data/ contains static demonstration fixtures. These are not liv
 
 Web search results include source context but are not automatically verified. Do not present snippets as confirmed facts or live availability. Users should check primary sources for time-sensitive details.
 
-The destination knowledge pipeline may build local SQLite/cache state. Render filesystems are ephemeral, so this state must be rebuildable. Never store durable user-owned memories in SQLite, JSON fixtures, or Render filesystem.
+Render filesystems are ephemeral. Never store durable user-owned memories in SQLite, JSON fixtures, or the Render filesystem.
 
 ## Email
-The email service reads SMTP settings from backend environment variables. Delivery requires SMTP host, username, password, and sender configuration. Do not claim delivery works until tested. Never expose SMTP credentials to frontend. Without SMTP configured, local development writes to a file outbox; in production the send fails with an error instead of pretending to succeed. /api/digest/send requires a signed-in session and only sends to the verified email of that account; the client cannot choose a recipient. GET /api/pipeline-status is a static check and never calls Gemini.
+The email service reads SMTP settings from backend environment variables. Delivery requires SMTP host, username, password, and sender configuration. Do not claim delivery works until tested. Never expose SMTP credentials to frontend. Without SMTP configured, local development writes to a file outbox; in production the send fails with an error instead of pretending to succeed. /api/digest/send requires a signed-in session and only sends to the verified email of that account; the client cannot choose a recipient.
 
 ## Data ownership
 - User identity/session: Supabase Auth.
 - Saved travel memories: Supabase PostgreSQL.
-- Destination cache: local generated SQLite/cache, rebuildable and ephemeral.
 - Demo fixtures: repository JSON files, version-controlled samples.
 - Rate-limit counters: Upstash Redis when configured, otherwise process memory.
 - Frontend assets: Vercel deployment artifact.
