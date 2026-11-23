@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, EmailStr, Field
 
 from ..rate_limit import limiter
@@ -17,7 +17,7 @@ class DigestRequest(BaseModel):
 
 @router.post("/send")
 @limiter.limit("3/hour")
-async def send_digest(request: Request, req: DigestRequest):
+async def send_digest(request: Request, response: Response, req: DigestRequest):
     try:
         signals = await get_signals(destination=None, region=req.region, limit=5)
         items: List[str] = []
