@@ -6,14 +6,14 @@ import os
 from dotenv import load_dotenv
 
 from .rate_limit import limiter
-from .routers import itineraries, signals, digest, chat, plan
+from .routers import itineraries, signals, digest, chat, plan, memory
 from .services.llm_provider import get_ai_provider_info
 
 
 def create_app() -> FastAPI:
     load_dotenv()
 
-    app = FastAPI(title="Nomad AI Backend", version="0.3.2")
+    app = FastAPI(title="NomadsAI Backend", version="0.4.0")
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -35,6 +35,7 @@ def create_app() -> FastAPI:
     app.include_router(digest.router, prefix="/api/digest", tags=["digest"])
     app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
     app.include_router(plan.router, prefix="/api/plan", tags=["plan"])
+    app.include_router(memory.router, prefix="/api/memory", tags=["memory"])
 
     @app.get("/")
     def root():
@@ -51,13 +52,14 @@ def create_app() -> FastAPI:
         return {
             "status": "active" if configured else "configuration_required",
             "ai_providers": get_ai_provider_info(),
-            "platform": "NomadAI",
-            "version": "0.3.2",
+            "platform": "NomadsAI",
+            "version": "0.4.0",
             "features": [
                 "Google Gemini as the sole AI provider",
                 "Server-side API key handling",
                 "Configurable Gemini model via GEMINI_MODEL",
                 "Multi-turn chat and itinerary generation",
+                "Supabase Auth protected travel memories",
             ],
         }
 
