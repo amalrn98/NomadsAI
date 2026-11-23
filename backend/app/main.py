@@ -63,12 +63,6 @@ def create_app() -> FastAPI:
             ],
         }
 
-    @app.get("/api/pipeline-status")
-    def pipeline_status():
-        """Get pipeline status and component health."""
-        from .startup import get_pipeline_status
-        return get_pipeline_status()
-
     return app
 
 

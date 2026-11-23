@@ -20,7 +20,6 @@ Maintain NomadsAI, an AI-assisted travel planning application. Prefer small, rev
 - backend/app/main.py: FastAPI app factory, middleware, router registration, health/status endpoints.
 - backend/app/routers/: HTTP API route handlers.
 - backend/app/services/: Gemini provider/client, web search, email, supporting services.
-- backend/app/pipeline/: itinerary pipeline and local destination knowledge.
 - backend/app/auth.py: Supabase bearer-token validation.
 - backend/app/routers/memory.py: authenticated travel-memory API.
 - backend/app/rate_limit.py: SlowAPI limiter and storage selection.

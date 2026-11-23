@@ -78,12 +78,6 @@ def test_email_is_not_faked_in_production_without_smtp(monkeypatch, tmp_path):
     assert list(tmp_path.iterdir()) == []
 
 
-def test_pipeline_status_does_not_call_the_llm(monkeypatch):
-    def boom(*args, **kwargs):
-        raise AssertionError("pipeline-status must not run a generation")
-
-    monkeypatch.setattr("app.pipeline.standalone_pipeline.generate_itinerary_pipeline", boom)
-    monkeypatch.setattr("app.pipeline.generate_itinerary_pipeline", boom)
-    response = TestClient(app).get("/api/pipeline-status")
-    assert response.status_code == 200
-    assert response.json()["status"] == "operational"
+def test_unauthenticated_pipeline_status_endpoint_is_gone():
+    # It used to trigger a Gemini generation on every anonymous request.
+    assert TestClient(app).get("/api/pipeline-status").status_code == 404
