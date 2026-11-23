@@ -52,14 +52,13 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install frontend dependencies
+      - name: Refresh frontend lockfile from patched package versions
         working-directory: frontend
-        run: npm install
+        run: npm install --package-lock-only --ignore-scripts
 
-      - name: Apply compatible frontend dependency security fixes
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'security/automated-checks' && github.event.pull_request.head.repo.full_name == github.repository
+      - name: Install frontend dependencies from lockfile
         working-directory: frontend
-        run: npm audit fix
+        run: npm ci
 
       - name: Audit frontend dependencies
         working-directory: frontend
