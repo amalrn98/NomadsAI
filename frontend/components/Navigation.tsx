@@ -93,6 +93,9 @@ export default function Navigation() {
 							<a href="/memories" className="text-gray-300 hover:text-accent-400 transition-colors duration-200 py-2">
 								Memories
 							</a>
+							<a href="/auth" className="text-gray-300 hover:text-accent-400 transition-colors duration-200 py-2">
+								Account
+							</a>
 							<a href="/pricing" className="flex items-center gap-2 px-4 py-2 bg-gradient-accent text-gray-900 rounded-lg font-semibold text-sm mt-2">
 								<Crown className="w-4 h-4" />
 								Get Started
