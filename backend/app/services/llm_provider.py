@@ -1,7 +1,9 @@
 """Gemini API provider used by NomadsAI."""
 
+import json
 import logging
 import os
+from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
@@ -11,8 +13,7 @@ GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 def _messages_to_gemini(messages: list[dict[str, str]]) -> tuple[dict[str, str] | None, list[dict[str, Any]]]:
-    """Convert OpenAI-style messages to Gemini systemInstruction and contents."""
-    system_parts = []
+    system_parts: list[str] = []
     contents: list[dict[str, Any]] = []
     for message in messages:
         role = message.get("role", "user")
@@ -27,9 +28,8 @@ def _messages_to_gemini(messages: list[dict[str, str]]) -> tuple[dict[str, str] 
             contents[-1]["parts"].append({"text": content})
         else:
             contents.append({"role": gemini_role, "parts": [{"text": content}]})
-
-    system_instruction = {"parts": [{"text": "\n\n".join(system_parts)}]} if system_parts else None
-    return system_instruction, contents
+    instruction = {"parts": [{"text": "\n\n".join(system_parts)}]} if system_parts else None
+    return instruction, contents
 
 
 class GeminiProvider:
@@ -42,18 +42,15 @@ class GeminiProvider:
     def is_configured(self) -> bool:
         return bool(self.api_key)
 
-    async def generate_completion(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
+    def _payload(self, messages: list[dict[str, str]], kwargs: dict[str, Any]) -> dict[str, Any]:
         if not self.api_key:
             raise RuntimeError("Gemini is not configured. Set GEMINI_API_KEY on the backend.")
-
-        system_instruction, contents = _messages_to_gemini(messages)
+        instruction, contents = _messages_to_gemini(messages)
         if not contents:
             raise ValueError("At least one user message is required.")
-
         payload: dict[str, Any] = {"contents": contents}
-        if system_instruction:
-            payload["systemInstruction"] = system_instruction
-
+        if instruction:
+            payload["systemInstruction"] = instruction
         generation_config: dict[str, Any] = {}
         if "temperature" in kwargs:
             generation_config["temperature"] = kwargs["temperature"]
@@ -62,26 +59,55 @@ class GeminiProvider:
             generation_config["maxOutputTokens"] = max_tokens
         if generation_config:
             payload["generationConfig"] = generation_config
+        return payload
 
+    async def generate_completion(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
+        payload = self._payload(messages, kwargs)
         model = kwargs.get("model") or self.model
         url = f"{GEMINI_API_BASE}/{model}:generateContent"
         headers = {"x-goog-api-key": self.api_key, "Content-Type": "application/json"}
-
         async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client:
             response = await client.post(url, headers=headers, json=payload)
             response.raise_for_status()
             data = response.json()
-
         candidates = data.get("candidates") or []
         if not candidates:
-            block_reason = (data.get("promptFeedback") or {}).get("blockReason", "unknown")
-            raise RuntimeError(f"Gemini returned no response candidate (reason: {block_reason}).")
-
+            reason = (data.get("promptFeedback") or {}).get("blockReason", "unknown")
+            raise RuntimeError(f"Gemini returned no response candidate (reason: {reason}).")
         parts = (candidates[0].get("content") or {}).get("parts") or []
-        text = "".join(part.get("text", "") for part in parts if isinstance(part, dict))
-        if not text.strip():
+        result = "".join(part.get("text", "") for part in parts if isinstance(part, dict)).strip()
+        if not result:
             raise RuntimeError("Gemini returned an empty text response.")
-        return text.strip()
+        return result
+
+    async def stream_completion(self, messages: list[dict[str, str]], **kwargs: Any) -> AsyncIterator[str]:
+        """Yield text chunks directly from Gemini's server-sent event stream."""
+        payload = self._payload(messages, kwargs)
+        model = kwargs.get("model") or self.model
+        url = f"{GEMINI_API_BASE}/{model}:streamGenerateContent"
+        headers = {"x-goog-api-key": self.api_key, "Content-Type": "application/json"}
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
+            async with client.stream("POST", url, params={"alt": "sse"}, headers=headers, json=payload) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line.startswith("data:"):
+                        continue
+                    raw = line[5:].strip()
+                    if not raw or raw == "[DONE]":
+                        continue
+                    try:
+                        event = json.loads(raw)
+                    except json.JSONDecodeError:
+                        logger.warning("Ignoring malformed Gemini streaming event")
+                        continue
+                    candidates = event.get("candidates") or []
+                    if not candidates:
+                        continue
+                    parts = (candidates[0].get("content") or {}).get("parts") or []
+                    for part in parts:
+                        chunk = part.get("text") if isinstance(part, dict) else None
+                        if chunk:
+                            yield chunk
 
 
 _provider: GeminiProvider | None = None
@@ -100,6 +126,11 @@ def is_configured() -> bool:
 
 async def generate_completion(messages: list[dict[str, str]], **kwargs: Any) -> str:
     return await get_llm_provider().generate_completion(messages, **kwargs)
+
+
+async def stream_completion(messages: list[dict[str, str]], **kwargs: Any) -> AsyncIterator[str]:
+    async for chunk in get_llm_provider().stream_completion(messages, **kwargs):
+        yield chunk
 
 
 def get_ai_provider_info() -> dict[str, Any]:
