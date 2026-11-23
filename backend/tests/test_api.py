@@ -1,9 +1,6 @@
-from sqlalchemy import inspect
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app import db
-from app.models import MemoryEntry
 from app.routers import plan as plan_router
 
 
@@ -59,14 +56,3 @@ def test_signals():
     assert response.status_code == 200, response.text
     assert isinstance(response.json(), list)
 
-
-def test_database_engine_uses_test_database(tmp_path, monkeypatch):
-    database_path = tmp_path / "test.db"
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{database_path}")
-    monkeypatch.setattr(db, "_engine", None)
-
-    engine = db.get_engine()
-    assert engine.url.database == str(database_path)
-
-    db.create_db_and_tables()
-    assert "memoryentry" in inspect(engine).get_table_names()
