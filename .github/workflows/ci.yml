@@ -15,8 +15,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -49,7 +54,12 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: npm install
+
+      - name: Apply compatible frontend dependency security fixes
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'security/automated-checks' && github.event.pull_request.head.repo.full_name == github.repository
+        working-directory: frontend
+        run: npm audit fix
 
       - name: Audit frontend dependencies
         working-directory: frontend
@@ -60,3 +70,16 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE: http://localhost:8000
         run: npm run build
+
+      - name: Commit refreshed lockfile
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'security/automated-checks' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/package-lock.json
+          if git diff --cached --quiet; then
+            echo "No lockfile changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: refresh frontend dependency lockfile [skip ci]"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
