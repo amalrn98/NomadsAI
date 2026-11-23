@@ -3,12 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "NomadsAI - AI-Powered Travel Intelligence",
-  description: "Enterprise-grade travel planning powered by NVIDIA's advanced AI. Get intelligent recommendations that understand your professional and personal travel needs.",
-  keywords: ["AI travel", "travel planning", "business travel", "NVIDIA AI", "travel intelligence"],
+  description: "Travel planning and destination research powered by Google Gemini.",
+  keywords: ["AI travel", "travel planning", "business travel", "Google Gemini", "travel intelligence"],
   authors: [{ name: "NomadsAI Team" }],
   openGraph: {
     title: "NomadsAI - AI-Powered Travel Intelligence",
-    description: "Enterprise-grade travel planning powered by NVIDIA's advanced AI",
+    description: "Travel planning powered by Google Gemini",
     type: "website",
     locale: "en_US",
   },
