@@ -1,16 +1,6 @@
-from datetime import datetime
-from typing import Optional, List
+from typing import List
 
-from sqlmodel import SQLModel, Field
 from pydantic import BaseModel, Field as PydanticField
-
-
-class MemoryEntry(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    title: str
-    content: str
-    destination: str
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 
 class TravelPlanRequest(BaseModel):
