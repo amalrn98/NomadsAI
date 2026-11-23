@@ -79,6 +79,7 @@ Configure `GEMINI_API_KEY`, `GEMINI_MODEL`, and `CORS_ORIGINS` in the backend ho
 - Rotate a key immediately if it is accidentally committed or exposed.
 - Restrict the key to the Gemini API in Google AI Studio / Google Cloud where available.
 - Use an explicit list of trusted frontend origins in `CORS_ORIGINS`, not a wildcard.
+- Public chat and itinerary-generation routes have per-IP limits. Configure `REDIS_URL` or `RATE_LIMIT_STORAGE_URI` for shared limits across multiple backend instances; the in-memory fallback is intended only for development or a single instance.
 
 ## Contributing
 
