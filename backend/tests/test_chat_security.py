@@ -1,3 +1,4 @@
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 import pytest
 
@@ -11,7 +12,7 @@ def test_memory_endpoints_require_authentication():
     assert "/api/memory/" in paths
     assert "/api/memory/{memory_id}" in paths
     assert paths["/api/memory/"]["get"]["security"] == [{"HTTPBearer": []}]
-    response = __import__("fastapi.testclient", fromlist=["TestClient"]).TestClient(app).get("/api/memory/")
+    response = TestClient(app).get("/api/memory/")
     assert response.status_code == 401
     assert "/api/chat/memory/{user_id}" not in paths
 
