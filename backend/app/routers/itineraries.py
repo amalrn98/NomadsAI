@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from ..rate_limit import limiter
@@ -33,7 +33,7 @@ class TravelPlanResponse(BaseModel):
 
 @router.post("/plan", response_model=TravelPlanResponse)
 @limiter.limit("3/minute")
-async def plan_travel(request: Request, payload: TravelPlanRequest):
+async def plan_travel(request: Request, response: Response, payload: TravelPlanRequest):
     try:
         data = await generate_itinerary(
             destination=payload.destination,
