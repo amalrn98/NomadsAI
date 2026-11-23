@@ -19,21 +19,47 @@ class DigestRequest(BaseModel):
 @limiter.limit("3/hour")
 async def send_digest(request: Request, response: Response, req: DigestRequest):
     try:
-        signals = await get_signals(destination=None, region=req.region, limit=5)
+        signals = await get_signals(
+            request=request,
+            response=response,
+            destination=None,
+            region=req.region,
+            limit=20,
+            online_mode=False,
+        )
+        # Local JSON fixtures are sample data, never current travel deals.
+        # Only source-linked live search results may be included in a digest.
+        live_items = [
+            item for item in signals
+            if item.get("data_status") == "live_search_result"
+            and item.get("source_url")
+        ]
         items: List[str] = []
-        for item in signals:
-            if item["type"] == "event":
-                items.append(f"Event: {item['name']} - {item['start_date']} in {item['location']}")
-            elif item["type"] == "flight_deal":
-                items.append(f"Flight deal: {item['from']} to {item['to']} for ${item['price']}")
-            elif item["type"] == "hotel_rate":
-                items.append(f"Hotel: {item['name']} in {item['city']} from ${item['price_per_night']}/night")
+        for item in live_items:
+            title = item.get("title")
+            source = item.get("source_name")
+            snippet = item.get("snippet")
+            url = item.get("source_url")
+            if title:
+                items.append(f"News: {title}")
+                if source:
+                    items.append(f"Source: {source}")
+                if snippet:
+                    items.append(snippet)
+                items.append(f"Verify details: {url}")
 
+        body = "\n".join(items) or (
+            "No source-linked live travel news was available. "
+            "Sample flight and hotel fixtures are intentionally excluded."
+        )
         send_email(
             to=str(req.email),
-            subject="Nomad AI - Weekly Top Travel Opportunities",
-            body="\n".join(items) or "No top signals this week.",
+            subject="Nomad AI - Travel News Digest",
+            body=body,
         )
-        return {"sent": True}
+        return {"sent": True, "included_items": len(live_items)}
     except Exception as exc:
-        raise HTTPException(status_code=502, detail="The digest could not be sent. Please try again later.") from exc
+        raise HTTPException(
+            status_code=502,
+            detail="The digest could not be sent. Please try again later.",
+        ) from exc
