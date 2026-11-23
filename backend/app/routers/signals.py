@@ -11,12 +11,27 @@ from ..services.web_search import search_news
 
 router = APIRouter()
 MOCK_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mock_data")
+SAMPLE_NOTICE = (
+    "Demonstration data only. Not current prices, inventory, schedules, or availability."
+)
 
 
 def _load_json(filename: str):
     path = os.path.abspath(os.path.join(MOCK_DIR, filename))
     with open(path, "r", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def _sample_metadata() -> dict:
+    return {
+        "data_status": "sample",
+        "source": "local_fixture",
+        "source_url": None,
+        "retrieved_at": None,
+        "is_live": False,
+        "verified": False,
+        "data_notice": SAMPLE_NOTICE,
+    }
 
 
 @router.get("/")
@@ -39,26 +54,38 @@ async def get_signals(
             continue
         if region and event.get("region") != region:
             continue
-        results.append({"type": "event", **event})
+        results.append({"type": "event", **event, **_sample_metadata()})
 
     for flight in flights:
         if destination and destination.lower() not in flight["to"].lower():
             continue
         if region and flight.get("region") != region:
             continue
-        results.append({"type": "flight_deal", **flight})
+        results.append({"type": "flight_deal", **flight, **_sample_metadata()})
 
     for hotel in hotels:
         if destination and destination.lower() not in hotel["city"].lower():
             continue
         if region and hotel.get("region") != region:
             continue
-        results.append({"type": "hotel_rate", **hotel})
+        results.append({"type": "hotel_rate", **hotel, **_sample_metadata()})
 
     if online_mode and destination:
         query = f"{destination} travel events festival {datetime.now(timezone.utc).year}"
-        for news_item in await asyncio.to_thread(search_news, query, max_results=5):
-            results.append({"type": "news", **news_item})
+        retrieved_at = datetime.now(timezone.utc).isoformat()
+        news_items = await asyncio.to_thread(search_news, query, max_results=5)
+        for news_item in news_items:
+            results.append({
+                "type": "news",
+                **news_item,
+                "data_status": "live_search_result",
+                "source_name": news_item.get("source") or "DuckDuckGo News",
+                "source_url": news_item.get("href"),
+                "retrieved_at": retrieved_at,
+                "is_live": True,
+                "verified": False,
+                "data_notice": "Search result only. Open the source and verify details before relying on them.",
+            })
 
     today = datetime.now(timezone.utc).date()
     filtered: List[dict] = []
@@ -67,7 +94,7 @@ async def get_signals(
             date_str = item.get("start_date") or item.get("date")
             if date_str:
                 try:
-                    if datetime.fromisoformat(date_str).date() < today:
+                    if datetime.fromisoformat(date_str.replace("Z", "+00:00")).date() < today:
                         continue
                 except (TypeError, ValueError):
                     continue
