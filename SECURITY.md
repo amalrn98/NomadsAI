@@ -9,12 +9,13 @@ Do not open public issues for suspected vulnerabilities. Report them privately t
 Pull requests and the default branch are checked with:
 
 - CodeQL security-extended analysis for Python and JavaScript/TypeScript.
-- Dependency review, which rejects newly introduced vulnerabilities rated high or critical.
 - Gitleaks, which scans repository history for committed secrets.
 - `pip-audit` for known Python package vulnerabilities.
 - `npm audit --audit-level=high` for frontend dependency vulnerabilities.
 
 Dependabot checks Python, npm, and GitHub Actions dependencies weekly. Security workflow runs are also scheduled weekly.
+
+GitHub's dependency graph, secret scanning, and push protection should also be enabled in repository settings when available. The workflow scans are defense-in-depth checks and do not replace those repository-level protections. Dependency review is not active until the dependency graph is enabled.
 
 ### Triage policy
 
@@ -23,8 +24,6 @@ Dependabot checks Python, npm, and GitHub Actions dependencies weekly. Security 
 3. Review medium and low findings during routine dependency maintenance.
 4. Record the affected package, advisory, impact, mitigation, and verification result in the relevant issue or pull request.
 5. Never paste secrets into issues, logs, commits, or chat.
-
-GitHub repository settings should also have secret scanning and push protection enabled when available. The workflow scan is a defense-in-depth check and does not replace those account-level protections.
 
 ## Data provenance
 
