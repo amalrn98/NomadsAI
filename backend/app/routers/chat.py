@@ -3,10 +3,11 @@ import logging
 import uuid
 from typing import Literal, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from ..rate_limit import limiter
 from ..services.ai_agent import ai_agent
 from ..services import llm_client
 from ..utils.knowledge import load_city_knowledge
@@ -24,7 +25,6 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=30)
     destination: Optional[str] = Field(default=None, max_length=160)
-    # JSON is the default contract used by the web client. Streaming is opt-in.
     stream: bool = False
 
 
@@ -33,9 +33,7 @@ class ChatStreamRequest(BaseModel):
     destination: Optional[str] = Field(default=None, max_length=160)
 
 
-@router.post("/stream")
-async def chat_stream_endpoint(req: ChatStreamRequest):
-    """Stream a chat response using the server-configured Gemini provider."""
+def _stream_response(req: ChatStreamRequest) -> StreamingResponse:
     user_id = str(uuid.uuid4())
     messages = [{"role": message.role, "content": message.content} for message in req.messages]
 
@@ -55,18 +53,23 @@ async def chat_stream_endpoint(req: ChatStreamRequest):
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-        },
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
     )
 
 
+@router.post("/stream")
+@limiter.limit("5/minute")
+async def chat_stream_endpoint(request: Request, req: ChatStreamRequest):
+    """Stream a chat response using the server-configured Gemini provider."""
+    return _stream_response(req)
+
+
 @router.post("/")
-async def chat_endpoint(req: ChatRequest):
+@limiter.limit("8/minute")
+async def chat_endpoint(request: Request, req: ChatRequest):
     """Return a JSON chat response, or an SSE stream when explicitly requested."""
     if req.stream:
-        return await chat_stream_endpoint(
+        return _stream_response(
             ChatStreamRequest(messages=req.messages, destination=req.destination)
         )
 
@@ -82,11 +85,7 @@ async def chat_endpoint(req: ChatRequest):
         ):
             full_response += chunk
 
-        return {
-            "reply": full_response,
-            "provider": "gemini",
-            "has_memory": False,
-        }
+        return {"reply": full_response, "provider": "gemini", "has_memory": False}
     except Exception:
         logger.exception("Primary chat flow failed")
         try:
