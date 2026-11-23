@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Session } from "@supabase/supabase-js";
-import { Calendar, Camera, MapPin, Plus, Trash2, LogOut } from "lucide-react";
+import { Calendar, Camera, MapPin, Plus, Trash2, LogOut, Pencil } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
@@ -23,6 +23,7 @@ export default function MemoriesPage() {
   const [authReady, setAuthReady] = useState(false);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [destination, setDestination] = useState("");
@@ -72,8 +73,8 @@ export default function MemoriesPage() {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch(API_BASE + "/api/memory/", {
-        method: "POST",
+      const response = await fetch(API_BASE + "/api/memory/" + (editingId || ""), {
+        method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + session.access_token },
         body: JSON.stringify({
           title, content, destination, image_url: imageUrl || null,
@@ -82,13 +83,30 @@ export default function MemoriesPage() {
         }),
       });
       if (!response.ok) throw new Error(response.status === 401 ? "Your session expired. Sign in again." : "Could not save this memory.");
-      const created: Memory = await response.json();
-      setMemories(current => [created, ...current]);
+      const saved: Memory = await response.json();
+      if (editingId) {
+        setMemories(current => current.map(memory => memory.id === editingId ? saved : memory));
+      } else {
+        setMemories(current => [saved, ...current]);
+      }
       setTitle(""); setContent(""); setDestination(""); setMood(""); setWeather("");
-      setCompanions(""); setImageUrl(SAMPLE_IMAGES[0]); setShowForm(false);
+      setCompanions(""); setImageUrl(SAMPLE_IMAGES[0]); setEditingId(null); setShowForm(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save this memory.");
     } finally { setBusy(false); }
+  }
+
+  function startEdit(memory: Memory) {
+    setEditingId(memory.id);
+    setTitle(memory.title);
+    setContent(memory.content);
+    setDestination(memory.destination);
+    setMood(memory.mood || "");
+    setWeather(memory.weather || "");
+    setCompanions(memory.companions.join(", "));
+    setImageUrl(memory.image_url || SAMPLE_IMAGES[0]);
+    setShowForm(true);
+    setError("");
   }
 
   async function deleteMemory(id: string) {
@@ -137,7 +155,7 @@ export default function MemoriesPage() {
             <p className="mt-1 text-xs text-slate-500">{session.user.email}</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => setShowForm(value => !value)} className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-4 py-2.5 font-semibold text-slate-950"><Plus className="h-4 w-4" />New memory</button>
+            <button onClick={() => { setEditingId(null); setTitle(""); setContent(""); setDestination(""); setMood(""); setWeather(""); setCompanions(""); setImageUrl(SAMPLE_IMAGES[0]); setShowForm(value => !value); }} className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-4 py-2.5 font-semibold text-slate-950"><Plus className="h-4 w-4" />New memory</button>
             <button onClick={signOut} className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-slate-300"><LogOut className="h-4 w-4" />Sign out</button>
           </div>
         </div>
@@ -172,8 +190,8 @@ export default function MemoriesPage() {
               </select>
             </label>
             <div className="flex justify-end gap-3 md:col-span-2">
-              <button type="button" onClick={() => setShowForm(false)} className="rounded-lg border border-white/15 px-4 py-2 text-slate-300">Cancel</button>
-              <button type="submit" disabled={busy} className="rounded-lg bg-cyan-400 px-4 py-2 font-semibold text-slate-950 disabled:opacity-50">{busy ? "Saving…" : "Save memory"}</button>
+              <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }} className="rounded-lg border border-white/15 px-4 py-2 text-slate-300">Cancel</button>
+              <button type="submit" disabled={busy} className="rounded-lg bg-cyan-400 px-4 py-2 font-semibold text-slate-950 disabled:opacity-50">{busy ? "Saving…" : editingId ? "Update memory" : "Save memory"}</button>
             </div>
           </form>
         )}
@@ -188,7 +206,10 @@ export default function MemoriesPage() {
               <article key={memory.id} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
                 <img src={memory.image_url || SAMPLE_IMAGES[0]} alt="" className="h-48 w-full object-cover" />
                 <div className="p-5">
-                  <h2 className="text-lg font-semibold">{memory.title}</h2>
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-lg font-semibold">{memory.title}</h2>
+                    <button onClick={() => startEdit(memory)} aria-label={"Edit " + memory.title} className="text-slate-400 hover:text-cyan-300"><Pencil className="h-4 w-4" /></button>
+                  </div>
                   <p className="mt-2 flex items-center gap-2 text-sm text-slate-400"><MapPin className="h-4 w-4" />{memory.destination}</p>
                   <p className="mt-1 flex items-center gap-2 text-xs text-slate-500"><Calendar className="h-3.5 w-3.5" />{new Date(memory.created_at).toLocaleDateString()}</p>
                   {memory.content && <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-300">{memory.content}</p>}
