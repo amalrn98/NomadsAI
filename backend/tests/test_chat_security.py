@@ -3,6 +3,7 @@ import pytest
 
 from app.main import app
 from app.routers.chat import ChatRequest
+from app.models import TravelPlanRequest
 
 
 def test_memory_endpoints_are_not_exposed_without_authentication():
@@ -24,3 +25,28 @@ def test_chat_rejects_client_supplied_system_messages():
 def test_chat_rejects_oversized_messages():
     with pytest.raises(ValidationError):
         ChatRequest(messages=[{"role": "user", "content": "x" * 8001}])
+
+def test_itinerary_request_rejects_oversized_destination():
+    with pytest.raises(ValidationError):
+        TravelPlanRequest(
+            from_city="Kochi, India",
+            destination="x" * 121,
+            departure_date="2026-12-01",
+            return_date="2026-12-02",
+            travelers=2,
+            budget="medium",
+            interests=["culture"],
+        )
+
+
+def test_itinerary_request_rejects_invalid_date_format():
+    with pytest.raises(ValidationError):
+        TravelPlanRequest(
+            from_city="Kochi, India",
+            destination="Barcelona, Spain",
+            departure_date="01-12-2026",
+            return_date="2026-12-02",
+            travelers=2,
+            budget="medium",
+            interests=["culture"],
+        )
