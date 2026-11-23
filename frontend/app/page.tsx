@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { 
   Globe, 
@@ -169,10 +170,29 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#F5F4EF] text-[#163238]">
+      <header className="sticky top-0 z-50 border-b border-[#DDE5DF] bg-[#F5F4EF]/95 backdrop-blur-xl">
+        <nav aria-label="Main navigation" className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-5 sm:px-8">
+          <Link href="/" className="flex items-center gap-3" aria-label="NomadsAI home">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#14796E] text-lg font-bold text-white">N</span>
+            <span className="text-xl font-bold tracking-tight text-[#163238]">nomads<span className="text-[#14796E]">ai</span></span>
+          </Link>
+          <div className="hidden items-center gap-8 text-sm font-medium text-[#667A79] md:flex">
+            <a href="#features" className="transition hover:text-[#14796E]">Discover</a>
+            <a href="#planner" className="transition hover:text-[#14796E]">Plan a trip</a>
+            <Link href="/memories" className="transition hover:text-[#14796E]">Travel journal</Link>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/auth" className="hidden rounded-full px-4 py-2.5 text-sm font-semibold text-[#163238] transition hover:bg-[#E8F0EB] sm:inline-flex">Sign in</Link>
+            <Link href="/auth?mode=sign-up" className="inline-flex items-center gap-2 rounded-full bg-[#14796E] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#105F57] focus:outline-none focus:ring-2 focus:ring-[#14796E] focus:ring-offset-2">
+              Create account <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </nav>
+      </header>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-        <div className="absolute inset-0 bg-slate-800/20"></div>
+      <section className="relative overflow-hidden bg-[#143B3B]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_38%,rgba(39,133,116,0.34),transparent_34%),radial-gradient(circle_at_15%_100%,rgba(239,128,91,0.12),transparent_30%)]"></div>
         
         <div className="relative container mx-auto px-4 py-24 lg:py-32">
           <div className="max-w-4xl mx-auto text-center">
@@ -183,7 +203,7 @@ export default function HomePage() {
               className="mb-8"
             >
               <h1 className="text-hero text-white mb-6">
-                AI-Powered Travel Intelligence
+                Travel further. Think a little deeper.
               </h1>
               <p className="text-hero-subtitle text-slate-300 max-w-3xl mx-auto">
                 Travel planning and destination research powered by Google Gemini. 
@@ -209,9 +229,10 @@ export default function HomePage() {
               <Button
                 size="xl"
                 variant="outline"
-                className="border-slate-600 text-white hover:bg-slate-800"
+                onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
+                className="border-white/30 text-white hover:bg-white/10"
               >
-                Watch Demo
+                Explore features
               </Button>
             </motion.div>
 
@@ -228,7 +249,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 bg-slate-50 dark:bg-slate-900">
+      <section id="features" className="py-24 bg-[#F5F4EF]">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -237,10 +258,10 @@ export default function HomePage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-section-title text-slate-900 dark:text-white mb-4">
+            <h2 className="text-section-title text-[#163238] mb-4">
               Why Choose NomadsAI?
             </h2>
-            <p className="text-section-subtitle text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
+            <p className="text-section-subtitle text-[#667A79] max-w-2xl mx-auto">
               Professional travel planning with cutting-edge AI technology and enterprise-grade security
             </p>
           </motion.div>
@@ -258,10 +279,10 @@ export default function HomePage() {
                 >
                   <Card className="h-full card-hover border-0 shadow-lg bg-white dark:bg-slate-800">
                     <CardHeader className="text-center">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-[#14796E] to-[#62A99A] rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <IconComponent className="w-8 h-8 text-white" />
                       </div>
-                      <CardTitle className="text-xl text-slate-900 dark:text-white">
+                      <CardTitle className="text-xl text-[#163238]">
                         {feature.title}
                       </CardTitle>
                     </CardHeader>
@@ -279,7 +300,7 @@ export default function HomePage() {
       </section>
 
       {/* Travel Planner Wizard */}
-      <section id="planner" className="py-24 bg-white dark:bg-slate-800">
+      <section id="planner" className="py-24 bg-white">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -297,15 +318,15 @@ export default function HomePage() {
           </motion.div>
 
           <div className="max-w-4xl mx-auto">
-            <Card className="shadow-2xl border-0 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-800 dark:to-slate-900">
+            <Card className="shadow-2xl border-0 bg-[#F5F4EF]">
               <CardHeader className="text-center pb-8">
                 <div className="flex justify-center mb-6">
                   {[1, 2, 3, 4].map((step) => (
                     <div key={step} className="flex items-center">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
                         step <= currentStep 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                          ? 'bg-[#14796E] text-white' 
+                          : 'bg-[#DDE5DF] text-[#667A79]'
                       }`}>
                         {step < currentStep ? <CheckCircle className="w-5 h-5" /> : step}
                       </div>
@@ -335,7 +356,7 @@ export default function HomePage() {
                     className="grid md:grid-cols-2 gap-6"
                   >
                     <div className="space-y-3">
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <label className="block text-sm font-medium text-[#425A59]">
                         Departure City
                       </label>
                       <input
@@ -343,7 +364,7 @@ export default function HomePage() {
                         placeholder="Where are you leaving from?"
                         value={travelPlan.from}
                         onChange={(e) => setTravelPlan(prev => ({ ...prev, from: e.target.value }))}
-                        className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-[#DDE5DF] rounded-lg bg-white text-slate-900 dark:text-white placeholder-[#8A9A96] focus:ring-2 focus:ring-[#14796E] focus:border-transparent"
                       />
                     </div>
                     <div className="space-y-3">
@@ -494,7 +515,7 @@ export default function HomePage() {
                       onClick={handleSubmit}
                       loading={loading}
                       disabled={!isStepValid()}
-                      className="bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-700 hover:to-teal-600 text-white"
+                      className="bg-gradient-to-r from-[#14796E] to-[#62A99A] hover:from-[#105F57] hover:to-[#438E80] text-white"
                     >
                       <Plane className="mr-2 h-5 w-5" />
                       Plan My Journey
@@ -528,7 +549,7 @@ export default function HomePage() {
               <Button
                 size="xl"
                 variant="secondary"
-                className="bg-white text-blue-600 hover:bg-blue-50"
+                className="bg-white text-[#14796E] hover:bg-blue-50"
               >
                 Get Started Free
               </Button>
