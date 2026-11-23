@@ -61,6 +61,7 @@ async def _supabase_request(
     }
     if payload is not None:
         headers["Content-Type"] = "application/json"
+    if payload is not None or method.upper() == "DELETE":
         headers["Prefer"] = "return=representation"
 
     try:
