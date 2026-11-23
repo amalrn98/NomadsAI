@@ -26,10 +26,16 @@ Dependabot checks Python, npm, and GitHub Actions dependencies weekly. Security 
 
 GitHub repository settings should also have secret scanning and push protection enabled when available. The workflow scan is a defense-in-depth check and does not replace those account-level protections.
 
+## Data provenance
+
+The local JSON event, flight, and hotel records are demonstration fixtures. API responses mark them as `sample`, `is_live: false`, and `verified: false`. They must not be presented as current prices, schedules, inventory, or availability.
+
+Online news results include their source URL and retrieval timestamp, but remain unverified search results. Users must open the source before relying on time-sensitive details. The email digest excludes local sample fixtures.
+
 ## Persistent travel memory
 
-Persistent memory is intentionally disabled until authenticated ownership is implemented. Do not mount the legacy memory router or restore memory writes until an authentication provider verifies access tokens server-side and every database operation is scoped to the verified subject.
+Persistent memory remains disabled until authenticated ownership is implemented. Do not mount the legacy memory router or restore memory writes until an authentication provider verifies access tokens server-side and every database operation is scoped to the verified subject.
 
 A client-supplied UUID, email address, or other opaque identifier is not proof of identity. When memory is reintroduced, add ownership metadata and migrations, enforce subject-scoped reads and writes, test cross-account read/update/delete denial, and document retention and account deletion.
 
-Tracking: GitHub issue #13. The issue remains open until an authentication provider and tenant-scoped persistence are implemented and verified.
+Tracking: GitHub issues #13 and #18. These issues remain open until their full acceptance criteria are implemented and verified.
