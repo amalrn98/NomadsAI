@@ -1,3 +1,4 @@
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 import pytest
 
@@ -6,9 +7,13 @@ from app.routers.chat import ChatRequest
 from app.models import TravelPlanRequest
 
 
-def test_memory_endpoints_are_not_exposed_without_authentication():
-    paths = {route.path for route in app.routes}
-    assert "/api/memory/" not in paths
+def test_memory_endpoints_require_authentication():
+    paths = app.openapi()["paths"]
+    assert "/api/memory/" in paths
+    assert "/api/memory/{memory_id}" in paths
+    assert paths["/api/memory/"]["get"]["security"] == [{"HTTPBearer": []}]
+    response = TestClient(app).get("/api/memory/")
+    assert response.status_code == 401
     assert "/api/chat/memory/{user_id}" not in paths
 
 
@@ -25,6 +30,7 @@ def test_chat_rejects_client_supplied_system_messages():
 def test_chat_rejects_oversized_messages():
     with pytest.raises(ValidationError):
         ChatRequest(messages=[{"role": "user", "content": "x" * 8001}])
+
 
 def test_itinerary_request_rejects_oversized_destination():
     with pytest.raises(ValidationError):
