@@ -1,11 +1,11 @@
 services:
 - type: web
-  name: nomad-ai-backend
-  env: python
+  name: NomadAI-backend
+  env: docker
   plan: free
-  buildCommand: pip install -r requirements.txt
-  startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
   rootDir: backend
+  dockerfilePath: ./Dockerfile
+  dockerContext: .
   autoDeploy: true
   envVars:
   - key: GEMINI_API_KEY
@@ -15,6 +15,8 @@ services:
   - key: SUPABASE_URL
     value: https://ggisuouanswimpvslluf.supabase.co
   - key: SUPABASE_PUBLISHABLE_KEY
+    sync: false
+  - key: RATE_LIMIT_STORAGE_URI
     sync: false
   - key: CORS_ORIGINS
     sync: false
