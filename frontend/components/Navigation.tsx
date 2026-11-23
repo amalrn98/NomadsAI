@@ -52,6 +52,12 @@ export default function Navigation() {
 								<span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-accent group-hover:w-full transition-all duration-300"></span>
 							</span>
 						</a>
+						<a href="/auth" className="group flex items-center gap-2 text-gray-300 hover:text-accent-400 transition-colors duration-200">
+							<span className="relative font-medium">
+								Account
+								<span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-accent group-hover:w-full transition-all duration-300"></span>
+							</span>
+						</a>
 					</nav>
 
 					{/* CTA and Mobile Menu Button */}
