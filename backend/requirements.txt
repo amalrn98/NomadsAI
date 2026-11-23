@@ -3,7 +3,6 @@ slowapi==0.1.9
 uvicorn[standard]==0.30.6
 pydantic==2.14.4
 pydantic[email]==2.14.4
-sqlmodel==0.0.22
 python-dotenv==1.2.3
 pytest==9.2.0
 requests==2.34.2
