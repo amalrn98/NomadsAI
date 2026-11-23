@@ -6,9 +6,13 @@ from app.routers.chat import ChatRequest
 from app.models import TravelPlanRequest
 
 
-def test_memory_endpoints_are_not_exposed_without_authentication():
-    paths = set(app.openapi()["paths"])
-    assert "/api/memory/" not in paths
+def test_memory_endpoints_require_authentication():
+    paths = app.openapi()["paths"]
+    assert "/api/memory/" in paths
+    assert "/api/memory/{memory_id}" in paths
+    assert paths["/api/memory/"]["get"]["security"] == [{"HTTPBearer": []}]
+    response = __import__("fastapi.testclient", fromlist=["TestClient"]).TestClient(app).get("/api/memory/")
+    assert response.status_code == 401
     assert "/api/chat/memory/{user_id}" not in paths
 
 
