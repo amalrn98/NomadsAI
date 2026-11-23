@@ -53,6 +53,8 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 ### Frontend
 
+Use Node.js 22 or newer, matching the Supabase JavaScript client requirement and the Vercel project runtime.
+
 ```bash
 cd frontend
 npm install
