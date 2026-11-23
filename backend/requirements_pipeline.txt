@@ -1,9 +1,9 @@
 # Pipeline-specific requirements for the two-stage itinerary generation system
 
 # Core dependencies
-jsonschema>=4.0.0
-sentence-transformers>=2.2.0
-numpy>=1.21.0
+jsonschema>=4.26.0
+sentence-transformers>=6.3.0
+numpy>=2.4.6
 
 # Database and caching
 sqlite3  # Usually included with Python
@@ -13,5 +13,5 @@ sqlite3  # Usually included with Python
 # weaviate-client>=3.25.0  # Alternative vector database
 
 # Development and testing
-pytest>=7.0.0
-pytest-asyncio>=0.21.0
+pytest>=9.2.0
+pytest-asyncio>=1.5.0
