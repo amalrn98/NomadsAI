@@ -60,12 +60,13 @@ def test_client_key_falls_back_when_header_too_short(monkeypatch):
     assert rate_limit.client_key(req) == "10.0.0.9"
 
 
-def test_email_outbox_filename_is_sanitized(monkeypatch, tmp_path):
+def test_email_outbox_filename_never_contains_recipient(monkeypatch, tmp_path):
     monkeypatch.setenv("OUTBOX_DIR", str(tmp_path))
     emailer._write_outbox("a/../../etc/x@example.com", "s", "b")
     files = list(tmp_path.iterdir())
     assert len(files) == 1
-    assert "/" not in files[0].name and tmp_path in files[0].parents
+    assert "etc" not in files[0].name and "example" not in files[0].name
+    assert "a/../../etc/x@example.com" in files[0].read_text()
 
 
 def test_email_is_not_faked_in_production_without_smtp(monkeypatch, tmp_path):

@@ -2,7 +2,7 @@ import os
 import smtplib
 from email.message import EmailMessage
 from datetime import datetime, timezone
-import re
+import uuid
 
 from ..runtime import is_production
 
@@ -21,8 +21,8 @@ class EmailNotConfiguredError(RuntimeError):
 def _write_outbox(to: str, subject: str, body: str):
 	out_dir = os.path.abspath(os.getenv("OUTBOX_DIR", "./outbox"))
 	os.makedirs(out_dir, exist_ok=True)
-	safe_to = re.sub(r"[^A-Za-z0-9._-]", "_", to)[:80]
-	fname = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f") + "-" + safe_to + ".txt"
+	# The filename never includes user-supplied data (the recipient is written inside the file).
+	fname = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:12] + ".txt"
 	path = os.path.join(out_dir, fname)
 	with open(path, "w", encoding="utf-8") as f:
 		f.write(f"To: {to}\nSubject: {subject}\n\n{body}\n")
