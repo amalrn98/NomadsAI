@@ -20,6 +20,8 @@ The infrastructure constraint is ₹0/month and free-tier-only. Do not select pa
 - Never commit or share secrets.
 
 ## Supabase
+
+See [DATABASE_BACKUPS.md](DATABASE_BACKUPS.md) for the manual backup and restore procedure. Free-tier Supabase backups are not automated by this project; a restore is not considered verified until tested against a separate project.
 1. Create/select a Supabase project. Use a separate project for a fork.
 2. Record project URL and publishable key.
 3. Apply all SQL migrations in ascending filename order. For an existing database, check which migrations already ran before manually applying SQL.
