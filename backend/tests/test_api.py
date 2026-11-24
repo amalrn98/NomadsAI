@@ -65,3 +65,11 @@ def test_signals():
     assert response.status_code == 200, response.text
     assert isinstance(response.json(), list)
 
+
+
+
+def test_legacy_itinerary_routes_are_removed():
+    client = TestClient(app)
+    assert client.post("/api/itineraries/plan", json={}).status_code == 404
+    assert client.get("/api/itineraries/surprise").status_code == 404
+    assert client.get("/api/itineraries/destinations").status_code == 404
