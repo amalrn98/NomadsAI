@@ -96,7 +96,7 @@ def create_app() -> FastAPI:
             if "NOMADSAI_SMOKE_OK" not in streamed:
                 raise RuntimeError("Synthetic streaming did not return the expected token.")
         except Exception as exc:
-            logger.exception("Protected production Gemini smoke test failed")
+            logger.error("Protected production Gemini smoke test failed (%s)", type(exc).__name__)
             raise HTTPException(
                 status_code=503,
                 detail="The synthetic AI smoke test failed.",
