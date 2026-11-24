@@ -79,3 +79,38 @@ def test_online_news_includes_source_and_retrieval_provenance(monkeypatch):
     assert item["source_name"] == "Example News"
     assert item["retrieved_at"]
     assert "verify details" in item["data_notice"].lower()
+
+
+
+def test_online_news_search_failure_keeps_sample_results_available(monkeypatch):
+    fixtures = {
+        "events.json": [{
+            "name": "Example Festival",
+            "location": "Example City",
+            "start_date": "2099-05-01",
+            "region": "Europe",
+        }],
+        "flights.json": [],
+        "hotels.json": [],
+    }
+    monkeypatch.setattr(
+        signals_router,
+        "_load_json",
+        lambda filename: fixtures[filename],
+    )
+
+    def fail_search(query, max_results):
+        raise RuntimeError("search provider unavailable")
+
+    monkeypatch.setattr(signals_router, "search_news", fail_search)
+
+    response = TestClient(app).get(
+        "/api/signals/?destination=Example%20City&online_mode=true"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["data_status"] == "sample"
+    assert data[0]["verified"] is False
+    assert data[0]["is_live"] is False
