@@ -27,6 +27,11 @@ def test_itinerary_plan_contract(monkeypatch):
             "local_recommendations": "Explore neighborhood markets.",
             "travel_tips": "Use public transport.",
             "ai_provider": "gemini",
+            "sources": [{"title": "Visitor information", "url": "https://example.com", "snippet": "Reference"}],
+            "retrieved_at": "2026-11-24T10:00:00+00:00",
+            "data_status": "ai_generated_with_unverified_search_context",
+            "verified": False,
+            "data_notice": "Verify details before travel.",
         }
 
     monkeypatch.setattr(plan_router, "generate_dynamic_itinerary", fake_generate_dynamic_itinerary)
@@ -48,6 +53,10 @@ def test_itinerary_plan_contract(monkeypatch):
     assert data["total_days"] == 2
     assert len(data["itinerary"]) == 2
     assert data["ai_provider"] == "gemini"
+    assert data["verified"] is False
+    assert data["data_status"] == "ai_generated_with_unverified_search_context"
+    assert data["sources"][0]["url"] == "https://example.com"
+    assert data["retrieved_at"] == "2026-11-24T10:00:00+00:00"
 
 
 def test_signals():
