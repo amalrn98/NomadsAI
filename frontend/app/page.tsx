@@ -163,7 +163,7 @@ export default function HomePage() {
             <Link href="/memories" className="transition hover:text-[#14796E]">Travel journal</Link>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/auth" className="hidden rounded-full px-4 py-2.5 text-sm font-semibold text-[#163238] transition hover:bg-[#E8F0EB] sm:inline-flex">Sign in</Link>
+            <Link href="/auth" className="inline-flex rounded-full px-3 py-2.5 text-sm font-semibold text-[#163238] transition hover:bg-[#E8F0EB] sm:px-4">Sign in</Link>
             <Link href="/auth?mode=sign-up" className="inline-flex items-center gap-2 rounded-full bg-[#14796E] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#105F57] focus:outline-none focus:ring-2 focus:ring-[#14796E] focus:ring-offset-2">
               Create account <ArrowRight className="h-4 w-4" />
             </Link>
@@ -312,7 +312,7 @@ export default function HomePage() {
                       </div>
                       {step < 4 && (
                         <div className={`w-16 h-1 mx-2 ${
-                          step < currentStep ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'
+                          step < currentStep ? 'bg-[#14796E]' : 'bg-[#DDE5DF]'
                         }`} />
                       )}
                     </div>
@@ -529,16 +529,18 @@ export default function HomePage() {
               <Button
                 size="xl"
                 variant="secondary"
+                onClick={() => document.getElementById("planner")?.scrollIntoView({ behavior: "smooth" })}
                 className="bg-white text-[#14796E] hover:bg-blue-50"
               >
-                Get Started Free
+                Start Planning
               </Button>
               <Button
                 size="xl"
                 variant="outline"
+                onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
                 className="border-white text-white hover:bg-white hover:text-blue-600"
               >
-                Schedule Demo
+                Explore Features
               </Button>
             </div>
           </motion.div>
