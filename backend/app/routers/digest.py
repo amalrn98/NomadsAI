@@ -134,7 +134,7 @@ async def send_digest(
         )
         return {"sent": True, "included_items": len(live_items)}
     except Exception as exc:
-        logger.exception("Digest send failed")
+        logger.error("Digest send failed (%s)", type(exc).__name__)
         raise HTTPException(
             status_code=502,
             detail="The digest could not be sent. Please try again later.",

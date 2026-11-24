@@ -19,5 +19,7 @@ services:
     sync: false
   - key: RATE_LIMIT_STORAGE_URI
     sync: false
+  - key: SMOKE_TEST_TOKEN
+    sync: false
   - key: CORS_ORIGINS
     sync: false
