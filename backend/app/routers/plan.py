@@ -82,6 +82,15 @@ async def plan_travel(request: Request, response: Response, payload: TravelPlanR
             from_city=payload.from_city,
             destination=payload.destination,
             total_days=days,
+            data_status=data.get("data_status", "ai_generated_unverified"),
+            verified=bool(data.get("verified", False)),
+            retrieved_at=data.get("retrieved_at"),
+            sources=data.get("sources", []),
+            data_notice=data.get(
+                "data_notice",
+                "AI-generated planning suggestions are unverified. Check official sources for "
+                "time-sensitive venue, price, schedule, and availability details.",
+            ),
         )
     except HTTPException:
         raise
