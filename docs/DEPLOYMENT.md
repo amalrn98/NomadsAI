@@ -37,6 +37,7 @@ Configure these values in Render:
 - GEMINI_MODEL: optional, currently gemini-3.8-flash.
 - SUPABASE_URL: project URL.
 - SUPABASE_PUBLISHABLE_KEY: publishable key.
+- SMOKE_TEST_TOKEN: high-entropy secret used only by the manual production smoke test.
 - CORS_ORIGINS: exact frontend origin, e.g. https://your-domain.example.
 - RATE_LIMIT_STORAGE_URI: Upstash Redis TLS connection URI, required in production.
 - REDIS_URL: alternative if RATE_LIMIT_STORAGE_URI is not set.
