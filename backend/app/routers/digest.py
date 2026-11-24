@@ -30,7 +30,15 @@ async def _enforce_account_quota(user_id: str) -> None:
             )
         return
 
-    client = Redis.from_url(redis_uri, decode_responses=True)
+    try:
+        client = Redis.from_url(redis_uri, decode_responses=True)
+    except Exception as exc:
+        logger.warning("Digest quota client could not be created: %s", type(exc).__name__)
+        raise HTTPException(
+            status_code=503,
+            detail="Digest delivery is temporarily unavailable.",
+        ) from exc
+
     try:
         key = f"nomadsai:digest:user:{user_id}:hour"
         count = await client.incr(key)
@@ -48,7 +56,10 @@ async def _enforce_account_quota(user_id: str) -> None:
             detail="Digest delivery is temporarily unavailable.",
         ) from exc
     finally:
-        await client.aclose()
+        try:
+            await client.aclose()
+        except Exception as exc:
+            logger.debug("Digest quota client close failed: %s", type(exc).__name__)
 
 
 class DigestRequest(BaseModel):
