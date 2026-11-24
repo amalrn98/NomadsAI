@@ -23,7 +23,7 @@ backend/app/main.py constructs FastAPI, configures CORS and rate limiting, and m
 Interactive OpenAPI docs are at /docs.
 
 ## AI
-Gemini calls are server-side through backend services. GEMINI_API_KEY must never reach the browser or source control. GEMINI_MODEL selects the model, with code default gemini-3.8-flash. /api/ai-status reports configuration, not successful live generation.
+Gemini calls are server-side through backend services. GEMINI_API_KEY must never reach the browser or source control. GEMINI_MODEL selects the model, with code default gemini-3.8-flash. /api/ai-status reports configuration, not successful live generation. The itinerary generator attaches timestamped web search references when available, but all generated itinerary content remains unverified. The results page labels this limitation and links the search references.
 
 ## Identity and user data
 Supabase Auth is the identity provider. Protected memory requests carry a bearer access token. backend/app/auth.py validates it through Supabase Auth /auth/v1/user and derives the user ID from the returned identity.
@@ -39,8 +39,12 @@ Invariants:
 
 The SQL migrations are authoritative. Cross-account behavior still requires live verification tracked by issue #13.
 
+## Readiness and smoke tests
+
+/healthz is a liveness check. /readyz checks that Gemini, Supabase, and Redis configuration is present; it does not perform live upstream requests. The hidden /internal/smoke/gemini route requires SMOKE_TEST_TOKEN and performs one synthetic generation plus one streaming request. It is intended for the manual GitHub Actions Production smoke test workflow only.
+
 ## Rate limiting
-backend/app/rate_limit.py uses SlowAPI. It selects RATE_LIMIT_STORAGE_URI, then REDIS_URL. In production (RENDER=true, or APP_ENV/ENVIRONMENT=production) the app refuses to start without Redis unless ALLOW_IN_MEMORY_RATE_LIMIT=true is set. Outside production it falls back to memory://, which is process-local and development-only. Callers are identified by socket address unless TRUSTED_PROXY_HOPS is set, in which case the X-Forwarded-For entry appended by the trusted proxy is used (leftmost entries are client-controlled and never trusted). Behind a shared proxy without this setting, all clients may share one rate-limit bucket.
+backend/app/rate_limit.py uses SlowAPI. It selects RATE_LIMIT_STORAGE_URI, then REDIS_URL. In production (RENDER=true, or APP_ENV/ENVIRONMENT=production) the app refuses to start without Redis unless ALLOW_IN_MEMORY_RATE_LIMIT=true is set. Outside production it falls back to memory://, which is process-local and development-only. Callers are identified by socket address unless TRUSTED_PROXY_HOPS is set, in which case the X-Forwarded-For entry appended by the trusted proxy is used (leftmost entries are client-controlled and never trusted). Behind a shared proxy without this setting, all clients may share one rate-limit bucket. Production startup fails if Redis is missing unless ALLOW_IN_MEMORY_RATE_LIMIT=true is explicitly set; that override is not suitable for production.
 
 ## Travel data and provenance
 backend/app/mock_data/ contains static demonstration fixtures. These are not live flight, hotel, event, price, inventory, or booking data. Preserve sample/unverified labels.
