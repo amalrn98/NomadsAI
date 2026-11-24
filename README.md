@@ -35,7 +35,7 @@ The deployment target is free-tier infrastructure. Free services can sleep, impo
 - **Rate limiting:** SlowAPI with Redis in production. The backend refuses to start without RATE_LIMIT_STORAGE_URI or REDIS_URL unless ALLOW_IN_MEMORY_RATE_LIMIT=true is explicitly set. Outside production it uses process-local memory, which is not shared across instances and resets on restart.
 - **Travel data:** Local fixtures and cached/curated destination knowledge are not live booking inventory.
 
-See [Architecture](docs/ARCHITECTURE.md) for request flows, trust boundaries, and data ownership.
+See [Architecture](docs/ARCHITECTURE.md) for request flows, trust boundaries, and data ownership. See [Database backups](docs/DATABASE_BACKUPS.md) for the manual free-tier travel-memory backup and restore procedure.
 
 ## Quick start
 
