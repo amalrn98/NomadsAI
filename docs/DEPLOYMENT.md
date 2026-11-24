@@ -91,3 +91,11 @@ For application changes, redeploy the last known-good commit from provider deplo
 
 ## Free-tier caveats
 Free services can sleep, impose daily/monthly quotas, limit compute, or change eligibility. A sleeping backend may have cold-start delay. A provider may block deployments after quotas are exhausted. Do not upgrade to paid plans without owner approval.
+
+
+## Rollback
+
+- **Render backend:** Open the service's Deploys page, select the last known-good successful deploy, and use the dashboard rollback action. Confirm `/healthz` and `/readyz` after rollback, then run the protected Gemini smoke workflow.
+- **Vercel frontend:** Open the project's Deployments page and promote the last known-good production deployment. Confirm the production API base and frontend origin still match the Render CORS configuration.
+- **Database migrations:** Do not assume an application rollback reverses SQL migrations. Prefer forward-only, backward-compatible migrations. If data is damaged, restore into a separate project first and validate it before planning any production recovery.
+- **Credential exposure:** Rotate the affected credential. Rolling back application code does not revoke an exposed key or token.
