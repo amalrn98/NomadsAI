@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import pytest
@@ -48,8 +49,7 @@ def test_itinerary_rejects_non_string_activities():
 
 
 
-@pytest.mark.asyncio
-async def test_itinerary_uses_search_context_and_marks_it_unverified(monkeypatch):
+def test_itinerary_uses_search_context_and_marks_it_unverified(monkeypatch):
     captured = {}
 
     async def fake_search(query, max_results=5):
@@ -90,14 +90,16 @@ async def test_itinerary_uses_search_context_and_marks_it_unverified(monkeypatch
     monkeypatch.setattr(ai_itinerary, "search_web", fake_search)
     monkeypatch.setattr(ai_itinerary, "generate_completion", fake_generate)
 
-    result = await ai_itinerary.generate_dynamic_itinerary(
-        destination="Kyoto",
-        days=1,
-        from_city="Osaka",
-        budget="medium",
-        interests=["culture"],
-    )
+    async def run():
+        return await ai_itinerary.generate_dynamic_itinerary(
+            destination="Kyoto",
+            days=1,
+            from_city="Osaka",
+            budget="medium",
+            interests=["culture"],
+        )
 
+    result = asyncio.run(run())
     assert "unverified reference material" in captured["prompt"]
     assert result["verified"] is False
     assert result["data_status"] == "ai_generated_with_unverified_search_context"
