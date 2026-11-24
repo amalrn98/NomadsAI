@@ -4,7 +4,7 @@ This guide describes the current high-level structure and security boundaries. C
 
 ## System context
 Browser -> Vercel frontend (Next.js) -> Render backend (FastAPI) -> Google Gemini.
-The browser also authenticates with Supabase Auth. Protected backend memory requests validate the user's Supabase bearer token and access Supabase PostgreSQL under RLS. FastAPI can use Upstash Redis for shared rate-limit storage and an SMTP provider for optional email.
+The browser also authenticates with Supabase Auth. Protected backend memory requests validate the user's Supabase bearer token and access Supabase PostgreSQL under RLS. FastAPI requires Upstash Redis for production rate-limit storage and can use an SMTP provider for optional email.
 
 ## Frontend
 frontend/ is a Next.js App Router application. Routes are in frontend/app/, shared UI in frontend/components/, and the browser Supabase client in frontend/lib/.
