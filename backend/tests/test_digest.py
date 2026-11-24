@@ -174,7 +174,7 @@ def test_digest_failure_logs_do_not_expose_provider_details(monkeypatch, caplog)
     monkeypatch.setattr(digest_router, "send_email", fail_send)
     _sign_in()
     try:
-        response = TestClient(app).post("/api/digest/send", json={})
+        response = TestClient(app, client=("203.0.113.77", 1234)).post("/api/digest/send", json={})
     finally:
         _sign_out()
 
