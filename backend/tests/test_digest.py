@@ -110,13 +110,13 @@ def test_digest_account_quota_is_shared_and_limited(monkeypatch):
             self.expirations = []
             self.closed = False
 
-        async def incr(self, key):
+        async def eval(self, script, numkeys, key, seconds):
+            assert numkeys == 1
+            assert "INCR" in script and "EXPIRE" in script
             self.count += 1
+            if self.count == 1:
+                self.expirations.append((key, seconds))
             return self.count
-
-        async def expire(self, key, seconds):
-            self.expirations.append((key, seconds))
-            return True
 
         async def aclose(self):
             self.closed = True
