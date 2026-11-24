@@ -71,3 +71,21 @@ def test_production_smoke_endpoint_checks_generation_and_streaming(monkeypatch):
         "streaming": "ok",
     }
     assert calls == {"generation": 1, "streaming": 1}
+
+
+
+def test_cors_preflight_allows_configured_frontend_origin(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://nomads-ai.vercel.app")
+    configured_app = main_module.create_app()
+
+    response = TestClient(configured_app).options(
+        "/api/ai-status",
+        headers={
+            "Origin": "https://nomads-ai.vercel.app",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://nomads-ai.vercel.app"
