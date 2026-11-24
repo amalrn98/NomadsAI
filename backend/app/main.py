@@ -26,10 +26,15 @@ def create_app() -> FastAPI:
     origins = [origin.strip() for origin in origins_raw.split(",") if origin.strip()]
     if not origins:
         origins = ["http://localhost:3000"]
+    # Vercel preview deployment hostnames change on each deployment. Keep the
+    # stable production origin in CORS_ORIGINS and use this optional, narrowly
+    # scoped regex for preview URLs belonging to this Vercel project.
+    origin_regex = os.getenv("CORS_ORIGIN_REGEX", "").strip() or None
 
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
+        allow_origin_regex=origin_regex,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
