@@ -13,7 +13,6 @@ The browser reads NEXT_PUBLIC_API_BASE, NEXT_PUBLIC_SUPABASE_URL, and NEXT_PUBLI
 
 ## Backend
 backend/app/main.py constructs FastAPI, configures CORS and rate limiting, and mounts routers:
-- /api/itineraries
 - /api/signals
 - /api/digest
 - /api/chat
@@ -60,7 +59,7 @@ The email service reads SMTP settings from backend environment variables. Delive
 - User identity/session: Supabase Auth.
 - Saved travel memories: Supabase PostgreSQL.
 - Demo fixtures: repository JSON files, version-controlled samples.
-- Rate-limit counters: Upstash Redis when configured, otherwise process memory.
+- Rate-limit counters: Upstash Redis in production; process memory only in local development or when the explicit production override is enabled.
 - Frontend assets: Vercel deployment artifact.
 
 ## Operational caveats
