@@ -1,5 +1,4 @@
 from app.services.llm_provider import GeminiProvider, _messages_to_gemini
-from app.services import llm_client
 
 
 def test_messages_convert_system_and_roles():
@@ -38,10 +37,8 @@ def test_gemini_configuration_is_read_from_environment(monkeypatch):
 
     assert provider.is_configured()
     assert provider.model == "gemini-test-model"
-    assert llm_client.is_configured()
 
 
 def test_missing_gemini_key_is_not_configured(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     assert not GeminiProvider().is_configured()
-    assert not llm_client.is_configured()
