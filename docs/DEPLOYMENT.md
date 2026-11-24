@@ -62,7 +62,7 @@ Do not assume email delivery works until tested. /healthz checks only process re
 NEXT_PUBLIC_ values are included in the browser bundle and must not contain private credentials.
 
 ## Upstash Redis
-Redis is optional locally and recommended for shared hosted rate limits. Create a free-tier database only after checking current limits, copy its TLS connection URI, and set RATE_LIMIT_STORAGE_URI in Render. Verify connectivity and actual limiter behavior. Do not paste the URI into source or chat.
+Redis is optional for local development but required for production rate limits. Create a free-tier database only after checking current limits, copy its TLS connection URI, and set RATE_LIMIT_STORAGE_URI in Render. Verify connectivity and actual limiter behavior. Do not paste the URI into source or chat.
 
 Production startup fails when Redis is absent unless ALLOW_IN_MEMORY_RATE_LIMIT=true is explicitly set. Do not enable that override in production. Outside production, the limiter uses process-local memory. Verify that RATE_LIMIT_STORAGE_URI is set in Render and that the free Upstash database is reachable.
 
