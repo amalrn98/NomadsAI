@@ -8,7 +8,7 @@ The infrastructure constraint is ₹0/month and free-tier-only. Do not select pa
 - Frontend: Vercel, project root frontend.
 - Backend: Render, configured by render.yaml, root directory backend, Docker.
 - Auth/database: Supabase, apply supabase/migrations/.
-- Shared rate limiting: Upstash Redis, optional but recommended for hosted use.
+- Shared rate limiting: Upstash Redis, required for production startup.
 - Email: SMTP provider, optional.
 
 ## Before deploying
@@ -38,12 +38,12 @@ Configure these values in Render:
 - SUPABASE_URL: project URL.
 - SUPABASE_PUBLISHABLE_KEY: publishable key.
 - CORS_ORIGINS: exact frontend origin, e.g. https://your-domain.example.
-- RATE_LIMIT_STORAGE_URI: Upstash Redis TLS connection URI, when using shared limits.
+- RATE_LIMIT_STORAGE_URI: Upstash Redis TLS connection URI, required in production.
 - REDIS_URL: alternative if RATE_LIMIT_STORAGE_URI is not set.
 
 render.yaml marks deployment-specific values sync: false. Supply them in the dashboard. Optional email variables: SMTP_HOST, SMTP_PORT (defaults 587), SMTP_USER, SMTP_PASS, FROM_EMAIL.
 
-Do not assume email delivery works until tested. /healthz checks only process responsiveness, not Gemini, Supabase, Redis, or SMTP.
+Do not assume email delivery works until tested. /healthz checks only process responsiveness, not Gemini, Supabase, Redis, or SMTP. /readyz checks that the required Gemini, Supabase, and Redis configuration is present, but does not prove each upstream service is reachable.
 
 ## Vercel frontend
 1. Import the repository.
@@ -61,18 +61,24 @@ NEXT_PUBLIC_ values are included in the browser bundle and must not contain priv
 ## Upstash Redis
 Redis is optional locally and recommended for shared hosted rate limits. Create a free-tier database only after checking current limits, copy its TLS connection URI, and set RATE_LIMIT_STORAGE_URI in Render. Verify connectivity and actual limiter behavior. Do not paste the URI into source or chat.
 
-Current code falls back to in-memory storage when Redis is absent. That fallback is not distributed and is tracked by issue #16.
+Production startup fails when Redis is absent unless ALLOW_IN_MEMORY_RATE_LIMIT=true is explicitly set. Do not enable that override in production. Outside production, the limiter uses process-local memory. Verify that RATE_LIMIT_STORAGE_URI is set in Render and that the free Upstash database is reachable.
+
+## Automated production smoke test
+
+The backend exposes a hidden synthetic test route at /internal/smoke/gemini. It is disabled unless SMOKE_TEST_TOKEN is configured. Set a high-entropy value as SMOKE_TEST_TOKEN in Render and set the same value as PRODUCTION_SMOKE_TOKEN in GitHub Actions secrets. Set PRODUCTION_API_BASE as a GitHub Actions repository variable, or supply the backend URL when manually dispatching the Production smoke test workflow.
+
+The workflow is manual only. It checks /healthz, /readyz, and /api/ai-status, then performs one small Gemini generation request and one streaming request. This consumes Gemini API quota, so run it deliberately and confirm the requests remain within the free quota. Never put the smoke token in source control or workflow inputs.
 
 ## Post-deployment verification
 1. Homepage loads on production domain.
 2. /auth loads and signup/sign-in UI is present.
 3. Signup confirmation redirects to the intended domain.
 4. Sign-in and sign-out work.
-5. Backend /healthz responds.
-6. /api/ai-status reports Gemini configuration, then perform a controlled real generation and inspect logs.
+5. Backend /healthz responds and /readyz reports required configuration.
+6. Run the manual Production smoke test workflow to verify Gemini generation and streaming.
 7. Authenticated memory create/list/update/delete work.
 8. Two test accounts cannot access each other's memories.
-9. Redis-backed limits behave as expected if configured.
+9. Redis-backed limits behave as expected across restarts and instances.
 10. Test email delivery separately if digest is enabled.
 
 A successful deployment or /healthz response does not prove every product feature works. Issue #17 tracks automated production smoke tests.
