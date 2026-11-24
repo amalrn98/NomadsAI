@@ -24,7 +24,7 @@ The `user_id` stored on a memory is assigned from the verified Auth user, never 
 
 The frontend uses the Supabase publishable key only. Never expose a Supabase secret or service-role key in frontend variables or source code. Persistent memory is account-scoped; chat does not yet retrieve or write long-term memories.
 
-Tracking: GitHub issues #13 and #16. Issue #13 remains open until cross-account behavior is tested against the live project and account deletion/retention controls are documented.
+Tracking: GitHub issues #13 and #16. See [DATA_PRIVACY.md](docs/DATA_PRIVACY.md) for stored fields, retention, and deletion behavior. Issue #13 remains open until cross-account isolation and account deletion are verified against the live project.
 
 ## Vulnerability triage
 
