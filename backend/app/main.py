@@ -9,7 +9,7 @@ import os
 from dotenv import load_dotenv
 
 from .rate_limit import limiter
-from .routers import itineraries, signals, digest, chat, plan, memory
+from .routers import signals, digest, chat, plan, memory
 from .services.llm_provider import get_ai_provider_info, generate_completion, stream_completion
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,6 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type"],
     )
 
-    app.include_router(itineraries.router, prefix="/api/itineraries", tags=["itineraries"])
     app.include_router(signals.router, prefix="/api/signals", tags=["signals"])
     app.include_router(digest.router, prefix="/api/digest", tags=["digest"])
     app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
