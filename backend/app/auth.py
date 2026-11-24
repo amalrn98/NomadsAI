@@ -67,4 +67,13 @@ async def get_current_user(
             detail="The account service returned an invalid identity.",
         ) from exc
 
-    return {"id": user_id, "email": user.get("email")}
+    return {"id": user_id, "email": _verified_email(user)}
+
+
+def _verified_email(user: dict) -> str | None:
+    """Return an account email only after Supabase confirms it."""
+    email = user.get("email")
+    confirmed_at = user.get("email_confirmed_at") or user.get("confirmed_at")
+    if not isinstance(email, str) or not email.strip() or not confirmed_at:
+        return None
+    return email.strip()
