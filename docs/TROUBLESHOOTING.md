@@ -42,7 +42,7 @@ Supabase environment values may be missing, or Supabase may be unavailable. Chec
 ## Rate limits are inconsistent
 - Check RATE_LIMIT_STORAGE_URI or REDIS_URL.
 - Confirm URI is the provider TLS connection string and database is active.
-- Current code falls back to in-memory storage when Redis is absent. Limits then reset on process restart and are not shared across instances.
+- Production startup fails if Redis is absent unless ALLOW_IN_MEMORY_RATE_LIMIT=true is explicitly set. Do not use that override for production. Outside production, in-memory limits reset on process restart and are not shared across instances.
 - See issue #16.
 
 ## Hosted backend is slow
