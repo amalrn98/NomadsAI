@@ -24,4 +24,14 @@ The `user_id` stored on a memory is assigned from the verified Auth user, never 
 
 The frontend uses the Supabase publishable key only. Never expose a Supabase secret or service-role key in frontend variables or source code. Persistent memory is account-scoped; chat does not yet retrieve or write long-term memories.
 
-Tracking: GitHub issues #13 and #16. Issue #13 remains open until cross-account behavior is tested against the live project and account deletion/retention controls are documented.
+Tracking: GitHub issues #13 and #16. See [DATA_PRIVACY.md](docs/DATA_PRIVACY.md) for stored fields, retention, and deletion behavior. Issue #13 remains open until cross-account isolation and account deletion are verified against the live project.
+
+## Vulnerability triage
+
+1. Treat confirmed critical vulnerabilities and exposed credentials as immediate incidents. Revoke or rotate exposed credentials before removing them from history.
+2. Block merges that introduce known high-severity vulnerabilities unless the maintainer records a time-bounded exception and mitigation.
+3. Review medium and low findings during routine dependency maintenance.
+4. Record the affected package, advisory, impact, mitigation, and verification result in the relevant issue or pull request.
+5. Never paste secrets into issues, logs, commits, or chat.
+
+The dependency-review workflow checks pull requests for newly introduced high-severity vulnerabilities when the repository Dependency graph is enabled and the DEPENDENCY_GRAPH_ENABLED repository variable is set to true. Python and npm audit jobs run independently of that setting. Dependabot is configured to open weekly grouped update PRs for Python, npm, and GitHub Actions dependencies. CodeQL, Gitleaks, pip-audit, and npm audit run through the existing CI/security workflows. Repository-level Dependency graph, secret scanning, push protection, and required checks must still be verified in GitHub settings. The Dependency Review action currently skips until the graph is enabled; its first run confirmed the graph is disabled.

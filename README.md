@@ -1,6 +1,6 @@
 # NomadsAI
 
-NomadsAI is an AI-assisted travel planning application built with Next.js, FastAPI, Google Gemini, Supabase Auth/PostgreSQL, and optional Redis-backed rate limiting.
+NomadsAI is an AI-assisted travel planning application built with Next.js, FastAPI, Google Gemini, Supabase Auth/PostgreSQL, and Redis-backed production rate limiting.
 
 This repository is intended to be independently understandable and runnable. Start with this guide, then use the linked documentation for setup, architecture, deployment, and contribution.
 
@@ -32,10 +32,10 @@ The deployment target is free-tier infrastructure. Free services can sleep, impo
 - **AI:** Google Gemini, called server-side. Keep its API key out of the browser.
 - **Identity:** Supabase Auth using browser publishable key and PKCE.
 - **User data:** Supabase PostgreSQL. travel_memories uses row-level security tied to auth.uid().
-- **Rate limiting:** SlowAPI with Redis when RATE_LIMIT_STORAGE_URI or REDIS_URL is configured. In production (Render, or APP_ENV/ENVIRONMENT=production) the backend refuses to start without Redis unless ALLOW_IN_MEMORY_RATE_LIMIT=true is set deliberately. Outside production it uses process-local memory, which is not shared across instances and resets on restart.
+- **Rate limiting:** SlowAPI with Redis in production. The backend refuses to start without RATE_LIMIT_STORAGE_URI or REDIS_URL unless ALLOW_IN_MEMORY_RATE_LIMIT=true is explicitly set. Outside production it uses process-local memory, which is not shared across instances and resets on restart.
 - **Travel data:** Local fixtures and cached/curated destination knowledge are not live booking inventory.
 
-See [Architecture](docs/ARCHITECTURE.md) for request flows, trust boundaries, and data ownership.
+See [Architecture](docs/ARCHITECTURE.md) for request flows, trust boundaries, and data ownership. See [Data privacy](docs/DATA_PRIVACY.md) for stored data and deletion behavior, and [Database backups](docs/DATABASE_BACKUPS.md) for the manual free-tier backup and restore procedure.
 
 ## Quick start
 

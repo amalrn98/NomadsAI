@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import logging
 from typing import List, Optional
 import asyncio
 import json
@@ -10,6 +11,7 @@ from ..rate_limit import limiter
 from ..services.web_search import search_news
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 MOCK_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mock_data")
 SAMPLE_NOTICE = (
     "Demonstration data only. Not current prices, inventory, schedules, or availability."
@@ -73,7 +75,14 @@ async def get_signals(
     if online_mode and destination:
         query = f"{destination} travel events festival {datetime.now(timezone.utc).year}"
         retrieved_at = datetime.now(timezone.utc).isoformat()
-        news_items = await asyncio.to_thread(search_news, query, max_results=5)
+        try:
+            news_items = await asyncio.wait_for(
+                asyncio.to_thread(search_news, query, max_results=5),
+                timeout=12,
+            )
+        except Exception as exc:
+            logger.warning("Online travel-news search failed: %s", type(exc).__name__)
+            news_items = []
         for news_item in news_items:
             results.append({
                 "type": "news",

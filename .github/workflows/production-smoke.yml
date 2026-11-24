@@ -1,0 +1,78 @@
+name: Production smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_base:
+        description: Production backend base URL (leave blank to use the PRODUCTION_API_BASE repository variable)
+        required: false
+        type: string
+      frontend_origin:
+        description: Production frontend origin (leave blank to use the PRODUCTION_FRONTEND_ORIGIN repository variable)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Validate smoke-test configuration
+        env:
+          INPUT_API_BASE: ${{ inputs.api_base }}
+          DEFAULT_API_BASE: ${{ vars.PRODUCTION_API_BASE }}
+          INPUT_FRONTEND_ORIGIN: ${{ inputs.frontend_origin }}
+          DEFAULT_FRONTEND_ORIGIN: ${{ vars.PRODUCTION_FRONTEND_ORIGIN }}
+          PRODUCTION_SMOKE_TOKEN: ${{ secrets.PRODUCTION_SMOKE_TOKEN }}
+        run: |
+          API_BASE="${INPUT_API_BASE:-$DEFAULT_API_BASE}"
+          if [ -z "$API_BASE" ]; then
+            echo "Set the api_base input or PRODUCTION_API_BASE repository variable."
+            exit 1
+          fi
+          if [ -z "$PRODUCTION_SMOKE_TOKEN" ]; then
+            echo "Set PRODUCTION_SMOKE_TOKEN in GitHub Actions secrets."
+            exit 1
+          fi
+          FRONTEND_ORIGIN="${INPUT_FRONTEND_ORIGIN:-$DEFAULT_FRONTEND_ORIGIN}"
+          if [ -z "$FRONTEND_ORIGIN" ]; then
+            echo "Set the frontend_origin input or PRODUCTION_FRONTEND_ORIGIN repository variable."
+            exit 1
+          fi
+          echo "API_BASE=${API_BASE%/}" >> "$GITHUB_ENV"
+          echo "FRONTEND_ORIGIN=${FRONTEND_ORIGIN%/}" >> "$GITHUB_ENV"
+
+      - name: Check process health
+        run: curl --fail --silent --show-error --max-time 30 "$API_BASE/healthz"
+
+      - name: Check configured service readiness
+        run: curl --fail --silent --show-error --max-time 30 "$API_BASE/readyz"
+
+
+      - name: Verify frontend-to-backend CORS
+        run: |
+          curl --silent --show-error --max-time 30 -D - -o /dev/null \
+            -X OPTIONS "$API_BASE/api/ai-status" \
+            -H "Origin: $FRONTEND_ORIGIN" \
+            -H "Access-Control-Request-Method: GET" \
+            -H "Access-Control-Request-Headers: authorization" |
+            tr -d '\r' |
+            grep -Fqi "access-control-allow-origin: $FRONTEND_ORIGIN"
+
+      - name: Verify Gemini configuration
+        run: |
+          curl --fail --silent --show-error --max-time 30 "$API_BASE/api/ai-status" |
+            python -c 'import json,sys; d=json.load(sys.stdin); g=d.get("ai_providers",{}).get("gemini",{}); assert d.get("status") == "active" and g.get("status") == "configured", "Gemini is not configured"'
+
+      - name: Verify protected Gemini generation and streaming
+        env:
+          PRODUCTION_SMOKE_TOKEN: ${{ secrets.PRODUCTION_SMOKE_TOKEN }}
+        run: |
+          curl --fail --silent --show-error --max-time 180 \
+            -X POST "$API_BASE/internal/smoke/gemini" \
+            -H "X-Smoke-Test-Token: $PRODUCTION_SMOKE_TOKEN" \
+            -H "Content-Type: application/json" |
+            python -c 'import json,sys; d=json.load(sys.stdin); assert d == {"status":"ok","generation":"ok","streaming":"ok"}, "AI smoke test failed"'
