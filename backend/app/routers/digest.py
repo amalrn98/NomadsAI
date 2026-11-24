@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 from typing import Annotated, List
@@ -50,6 +51,8 @@ async def _enforce_account_quota(user_id: str) -> None:
             3600,
         )
         if count > 3:
+            account_ref = hashlib.sha256(user_id.encode("utf-8")).hexdigest()[:12]
+            logger.warning("Digest account quota exceeded (account_ref=%s)", account_ref)
             raise HTTPException(
                 status_code=429,
                 detail="Digest limit reached. Try again later.",
