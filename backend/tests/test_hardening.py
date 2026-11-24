@@ -81,3 +81,22 @@ def test_email_is_not_faked_in_production_without_smtp(monkeypatch, tmp_path):
 def test_unauthenticated_pipeline_status_endpoint_is_gone():
     # It used to trigger a Gemini generation on every anonymous request.
     assert TestClient(app).get("/api/pipeline-status").status_code == 404
+
+
+
+def test_render_client_key_uses_cloudflare_injected_ip(monkeypatch):
+    monkeypatch.setenv("RENDER", "true")
+    req = _request({
+        "CF-Connecting-IP": "203.0.113.7",
+        "X-Forwarded-For": "6.6.6.6, 198.51.100.9",
+    })
+    assert rate_limit.client_key(req) == "203.0.113.7"
+
+
+def test_render_client_key_ignores_invalid_cloudflare_ip(monkeypatch):
+    monkeypatch.setenv("RENDER", "true")
+    req = _request({
+        "CF-Connecting-IP": "6.6.6.6, 203.0.113.7",
+        "X-Forwarded-For": "6.6.6.6",
+    })
+    assert rate_limit.client_key(req) == "10.0.0.9"
