@@ -41,12 +41,18 @@ interface TravelPlan {
   from_city: string;
   destination: string;
   total_days: number;
+  data_status?: string;
+  verified?: boolean;
+  retrieved_at?: string | null;
+  sources?: Array<{ title: string; url: string; snippet?: string }>;
+  data_notice?: string;
 }
 
 function ResultsPageContent() {
   const [travelPlan, setTravelPlan] = useState<TravelPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -83,6 +89,25 @@ function ResultsPageContent() {
 
     fetchTravelPlan();
   }, [searchParams]);
+
+  async function shareItinerary() {
+    const url = window.location.href;
+    const title = travelPlan?.summary || "NomadsAI travel itinerary";
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text: "View this travel itinerary.", url });
+        return;
+      } catch (shareError) {
+        if (shareError instanceof DOMException && shareError.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareStatus("Itinerary link copied.");
+    } catch {
+      setShareStatus("Sharing is unavailable in this browser.");
+    }
+  }
 
   const parseActivity = (activity: string) => {
     // Parse "9:00 AM - The Tower of London..." format
@@ -151,12 +176,12 @@ function ResultsPageContent() {
               <ArrowLeft className="w-4 h-4" />
               <span className="text-sm font-medium">Back</span>
             </Link>
-            <div className="flex gap-3">
-              <Button variant="outline" size="sm" className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-blue-600 transition-all">
+            <div className="flex gap-3 print:hidden">
+              <Button onClick={() => window.print()} variant="outline" size="sm" className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-blue-600 transition-all">
                 <Download className="w-4 h-4 mr-2" />
-                PDF
+                Print / Save PDF
               </Button>
-              <Button variant="outline" size="sm" className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-blue-600 transition-all">
+              <Button onClick={shareItinerary} variant="outline" size="sm" className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-blue-600 transition-all">
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
@@ -193,7 +218,7 @@ function ResultsPageContent() {
               <div className="w-1 h-1 bg-white/50 rounded-full"></div>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5" />
-                <span className="text-sm">AI Curated</span>
+                <span className="text-sm">AI-generated, verify details</span>
               </div>
             </div>
           </motion.div>
@@ -201,6 +226,27 @@ function ResultsPageContent() {
       </div>
 
       <div className="container mx-auto px-4 py-12">
+        {shareStatus && <p className="mb-4 text-sm text-slate-600 print:hidden" role="status">{shareStatus}</p>}
+        <section className="mb-8 rounded-2xl border border-amber-300/60 bg-amber-50 p-5 text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-100" aria-label="Travel information verification">
+          <h2 className="font-semibold">Verify travel details before relying on them</h2>
+          <p className="mt-2 text-sm leading-relaxed">
+            {travelPlan.data_notice || "AI-generated planning suggestions are unverified. Check official sources for venue, price, opening-hour, schedule, and availability details."}
+          </p>
+          {travelPlan.sources && travelPlan.sources.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-semibold">Search references, not verified endorsements</p>
+              <ul className="mt-2 space-y-2">
+                {travelPlan.sources.map((source, index) => (
+                  <li key={source.url + index} className="text-sm">
+                    <a href={source.url} target="_blank" rel="noreferrer" className="underline underline-offset-2">{source.title}</a>
+                    {source.snippet && <p className="mt-1 text-xs opacity-80">{source.snippet}</p>}
+                  </li>
+                ))}
+              </ul>
+              {travelPlan.retrieved_at && <p className="mt-3 text-xs opacity-70">Search retrieved: {new Date(travelPlan.retrieved_at).toLocaleString()}</p>}
+            </div>
+          )}
+        </section>
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Main Itinerary - Takes 3 columns */}
           <div className="lg:col-span-3 space-y-6">
@@ -393,11 +439,11 @@ function ResultsPageContent() {
                   Ready to turn this plan into unforgettable memories?
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 shadow-lg">
+                  <Button onClick={() => window.print()} size="lg" className="bg-white text-blue-600 hover:bg-blue-50 shadow-lg print:hidden">
                     <Download className="w-5 h-5 mr-2" />
-                    Download PDF
+                    Print / Save PDF
                   </Button>
-                  <Button size="lg" variant="outline" className="border-2 border-white/50 bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-blue-600">
+                  <Button onClick={shareItinerary} size="lg" variant="outline" className="border-2 border-white/50 bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-blue-600 print:hidden">
                     <Share2 className="w-5 h-5 mr-2" />
                     Share with Friends
                   </Button>
