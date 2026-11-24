@@ -59,7 +59,7 @@ jobs:
             -H "Origin: $FRONTEND_ORIGIN" \
             -H "Access-Control-Request-Method: GET" \
             -H "Access-Control-Request-Headers: authorization" |
-            tr -d '\\r' |
+            tr -d '\r' |
             grep -Fqi "access-control-allow-origin: $FRONTEND_ORIGIN"
 
       - name: Verify Gemini configuration
