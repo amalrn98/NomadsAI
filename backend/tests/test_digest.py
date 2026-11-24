@@ -155,3 +155,30 @@ def test_digest_account_quota_fails_closed_in_production_without_redis(monkeypat
         return exc.value.status_code
 
     assert asyncio.run(run()) == 503
+
+
+
+def test_digest_failure_logs_do_not_expose_provider_details(monkeypatch, caplog):
+    async def fake_get_signals(**kwargs):
+        return [{
+            "data_status": "live_search_result",
+            "title": "Travel update",
+            "snippet": "A travel update.",
+            "source_url": "https://example.com/travel",
+        }]
+
+    def fail_send(**kwargs):
+        raise RuntimeError("SMTP_PASS=private-provider-secret")
+
+    monkeypatch.setattr(digest_router, "get_signals", fake_get_signals)
+    monkeypatch.setattr(digest_router, "send_email", fail_send)
+    _sign_in()
+    try:
+        response = TestClient(app).post("/api/digest/send", json={})
+    finally:
+        _sign_out()
+
+    assert response.status_code == 502
+    assert "private-provider-secret" not in caplog.text
+    assert "SMTP_PASS" not in caplog.text
+    assert "RuntimeError" in caplog.text
