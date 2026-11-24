@@ -68,7 +68,7 @@ Production startup fails when Redis is absent unless ALLOW_IN_MEMORY_RATE_LIMIT=
 
 ## Automated production smoke test
 
-The backend exposes a hidden synthetic test route at /internal/smoke/gemini. It is disabled unless SMOKE_TEST_TOKEN is configured. Set a high-entropy value as SMOKE_TEST_TOKEN in Render and set the same value as PRODUCTION_SMOKE_TOKEN in GitHub Actions secrets. Set PRODUCTION_API_BASE as a GitHub Actions repository variable, or supply the backend URL when manually dispatching the Production smoke test workflow.
+The backend exposes a hidden synthetic test route at /internal/smoke/gemini. It is disabled unless SMOKE_TEST_TOKEN is configured. Set a high-entropy value as SMOKE_TEST_TOKEN in Render and set the same value as PRODUCTION_SMOKE_TOKEN in GitHub Actions secrets. Set PRODUCTION_API_BASE and PRODUCTION_FRONTEND_ORIGIN as GitHub Actions repository variables, or supply both URLs when manually dispatching the Production smoke test workflow. The workflow also verifies the configured frontend origin through a CORS preflight.
 
 The workflow is manual only. It checks /healthz, /readyz, and /api/ai-status, then performs one small Gemini generation request and one streaming request. This consumes Gemini API quota, so run it deliberately and confirm the requests remain within the free quota. Never put the smoke token in source control or workflow inputs.
 
@@ -84,7 +84,7 @@ The workflow is manual only. It checks /healthz, /readyz, and /api/ai-status, th
 9. Redis-backed limits behave as expected across restarts and instances.
 10. Test email delivery separately if digest is enabled.
 
-A successful deployment or /healthz response does not prove every product feature works. Issue #17 tracks automated production smoke tests.
+A successful deployment or /healthz response does not prove every product feature works. Issue #17 remains open until the production secrets and URL variables are configured and the manual smoke workflow passes against the live deployment.
 
 ## Rollback
 For application changes, redeploy the last known-good commit from provider deployment history. For database changes, prefer a reviewed forward-fix migration unless a safe rollback was explicitly prepared. Never delete or rewrite applied migrations to roll back.
