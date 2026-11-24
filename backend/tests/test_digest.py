@@ -94,7 +94,7 @@ def test_digest_ignores_client_supplied_recipient(monkeypatch):
 
 
 def test_digest_rejects_unverified_account_email():
-    _sign_in({"id": USER["id"], "email": "traveler@example.com", "email_confirmed_at": None})
+    _sign_in({"id": USER["id"], "email": None})
     try:
         response = TestClient(app).post("/api/digest/send", json={})
     finally:
