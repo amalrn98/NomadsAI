@@ -41,9 +41,14 @@ async def _enforce_account_quota(user_id: str) -> None:
 
     try:
         key = f"nomadsai:digest:user:{user_id}:hour"
-        count = await client.incr(key)
-        if count == 1:
-            await client.expire(key, 3600)
+        count = await client.eval(
+            "local count = redis.call('INCR', KEYS[1]); "
+            "if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]); end; "
+            "return count",
+            1,
+            key,
+            3600,
+        )
         if count > 3:
             raise HTTPException(
                 status_code=429,
