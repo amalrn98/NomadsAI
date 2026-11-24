@@ -1,6 +1,6 @@
 # NomadsAI
 
-NomadsAI is an AI-assisted travel planning application built with Next.js, FastAPI, Google Gemini, Supabase Auth/PostgreSQL, and optional Redis-backed rate limiting.
+NomadsAI is an AI-assisted travel planning application built with Next.js, FastAPI, Google Gemini, Supabase Auth/PostgreSQL, and Redis-backed production rate limiting.
 
 This repository is intended to be independently understandable and runnable. Start with this guide, then use the linked documentation for setup, architecture, deployment, and contribution.
 
