@@ -51,7 +51,7 @@ backend/app/mock_data/ contains static demonstration fixtures. These are not liv
 
 Web search results include source context but are not automatically verified. Do not present snippets as confirmed facts or live availability. Users should check primary sources for time-sensitive details.
 
-Render filesystems are ephemeral. Never store durable user-owned memories in SQLite, JSON fixtures, or the Render filesystem.
+Render filesystems are ephemeral. Never store durable user-owned memories in SQLite, JSON fixtures, or the Render filesystem. Supabase free-tier backups are manual; see DATABASE_BACKUPS.md for the travel-memory export and restore procedure.
 
 ## Email
 The email service reads SMTP settings from backend environment variables. Delivery requires SMTP host, username, password, and sender configuration. Do not claim delivery works until tested. Never expose SMTP credentials to frontend. Without SMTP configured, local development writes to a file outbox; in production the send fails with an error instead of pretending to succeed. /api/digest/send requires a signed-in session and only sends to the verified email of that account; the client cannot choose a recipient.
