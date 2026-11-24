@@ -89,3 +89,47 @@ def test_cors_preflight_allows_configured_frontend_origin(monkeypatch):
 
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "https://nomads-ai.vercel.app"
+
+
+
+def test_cors_preflight_allows_project_preview_origins(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://nomads-ai.vercel.app")
+    monkeypatch.setenv(
+        "CORS_ORIGIN_REGEX",
+        r"^https://nomads-[a-z0-9-]+-amalrn98-projects\.vercel\.app$",
+    )
+    configured_app = main_module.create_app()
+
+    response = TestClient(configured_app).options(
+        "/api/plan",
+        headers={
+            "Origin": "https://nomads-5fat4go8z-amalrn98-projects.vercel.app",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == (
+        "https://nomads-5fat4go8z-amalrn98-projects.vercel.app"
+    )
+
+
+def test_cors_preflight_rejects_unrelated_preview_origin(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://nomads-ai.vercel.app")
+    monkeypatch.setenv(
+        "CORS_ORIGIN_REGEX",
+        r"^https://nomads-[a-z0-9-]+-amalrn98-projects\.vercel\.app$",
+    )
+    configured_app = main_module.create_app()
+
+    response = TestClient(configured_app).options(
+        "/api/plan",
+        headers={
+            "Origin": "https://attacker-example.vercel.app",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+
+    assert response.status_code == 400
