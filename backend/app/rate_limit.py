@@ -1,5 +1,6 @@
 """Shared rate limiter for public, cost-bearing API endpoints."""
 
+import ipaddress
 import logging
 import os
 
@@ -46,12 +47,22 @@ def _trusted_proxy_hops() -> int:
 def client_key(request: Request) -> str:
     """Identify the caller for rate limiting.
 
-    By default the socket address is used. Behind a reverse proxy, set
-    TRUSTED_PROXY_HOPS to the number of trusted proxies that append to
-    X-Forwarded-For. The entry that many positions from the right is used, because
-    only entries appended by trusted proxies can be relied on; the leftmost entries
-    are client-controlled and spoofable.
+    On Render, use the Cloudflare-injected CF-Connecting-IP address. In other
+    deployments, the socket address is used unless TRUSTED_PROXY_HOPS is set to
+    the number of trusted proxies that append to X-Forwarded-For. The entry that
+    many positions from the right is used; leftmost entries are client-controlled
+    and spoofable. Invalid forwarded values are ignored.
     """
+    if env_flag("RENDER"):
+        # Render's Cloudflare edge overwrites this header with the visitor IP.
+        # Validate it as an IP literal before using it as a quota key.
+        cloudflare_ip = request.headers.get("cf-connecting-ip", "").strip()
+        if cloudflare_ip:
+            try:
+                return ipaddress.ip_address(cloudflare_ip).compressed
+            except ValueError:
+                logger.warning("Ignoring invalid CF-Connecting-IP header")
+
     hops = _trusted_proxy_hops()
     if hops:
         entries = [
