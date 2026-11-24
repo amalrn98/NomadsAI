@@ -4,7 +4,7 @@ from app.auth import get_current_user
 from app.main import app
 from app.routers import digest as digest_router
 
-USER = {"id": "d8a2c13b-5e77-4f01-8c29-8e71f55b7a44", "email": "traveler@example.com"}
+USER = {"id": "d8a2c13b-5e77-4f01-8c29-8e71f55b7a44", "email": "traveler@example.com", "email_confirmed_at": "2026-11-23T10:00:00Z"}
 
 
 def _sign_in(user=USER):
@@ -89,8 +89,8 @@ def test_digest_ignores_client_supplied_recipient(monkeypatch):
     assert sent["to"] == "traveler@example.com"
 
 
-def test_digest_rejects_account_without_email():
-    _sign_in({"id": USER["id"], "email": None})
+def test_digest_rejects_unverified_account_email():
+    _sign_in({"id": USER["id"], "email": "traveler@example.com", "email_confirmed_at": None})
     try:
         response = TestClient(app).post("/api/digest/send", json={})
     finally:
