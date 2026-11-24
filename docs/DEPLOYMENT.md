@@ -46,7 +46,7 @@ Configure these values in Render:
 
 render.yaml marks deployment-specific values sync: false. Supply them in the dashboard. Optional email variables: SMTP_HOST, SMTP_PORT (defaults 587), SMTP_USER, SMTP_PASS, FROM_EMAIL.
 
-Do not assume email delivery works until tested. /healthz checks only process responsiveness, not Gemini, Supabase, Redis, or SMTP. /readyz checks that the required Gemini, Supabase, and Redis configuration is present, but does not prove each upstream service is reachable.
+On Render, rate limiting uses the platform-injected CF-Connecting-IP header rather than the proxy socket address. The backend validates this value before using it. Do not set TRUSTED_PROXY_HOPS for Render unless the platform's header behavior changes. Do not assume email delivery works until tested. /healthz checks only process responsiveness, not Gemini, Supabase, Redis, or SMTP. /readyz checks that the required Gemini, Supabase, and Redis configuration is present, but does not prove each upstream service is reachable.
 
 ## Vercel frontend
 1. Import the repository.
