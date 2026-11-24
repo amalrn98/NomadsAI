@@ -93,8 +93,8 @@ def create_app() -> FastAPI:
                     messages, temperature=0, max_output_tokens=16
                 )
             ])
-            if not streamed.strip():
-                raise RuntimeError("Synthetic streaming returned no text.")
+            if "NOMADSAI_SMOKE_OK" not in streamed:
+                raise RuntimeError("Synthetic streaming did not return the expected token.")
         except Exception as exc:
             logger.exception("Protected production Gemini smoke test failed")
             raise HTTPException(
