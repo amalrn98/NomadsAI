@@ -1,3 +1,5 @@
+import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.auth import get_current_user
@@ -96,3 +98,57 @@ def test_digest_rejects_unverified_account_email():
     finally:
         _sign_out()
     assert response.status_code == 400
+
+
+
+@pytest.mark.asyncio
+async def test_digest_account_quota_is_shared_and_limited(monkeypatch):
+    class FakeRedisClient:
+        def __init__(self):
+            self.count = 0
+            self.expirations = []
+            self.closed = False
+
+        async def incr(self, key):
+            self.count += 1
+            return self.count
+
+        async def expire(self, key, seconds):
+            self.expirations.append((key, seconds))
+            return True
+
+        async def aclose(self):
+            self.closed = True
+
+    fake = FakeRedisClient()
+
+    class FakeRedis:
+        @classmethod
+        def from_url(cls, uri, decode_responses=True):
+            assert uri == "redis://test"
+            return fake
+
+    monkeypatch.setenv("RATE_LIMIT_STORAGE_URI", "redis://test")
+    monkeypatch.setattr(digest_router, "Redis", FakeRedis)
+
+    for _ in range(3):
+        await digest_router._enforce_account_quota(USER["id"])
+
+    with pytest.raises(HTTPException) as exc:
+        await digest_router._enforce_account_quota(USER["id"])
+
+    assert exc.value.status_code == 429
+    assert fake.expirations == [(f"nomadsai:digest:user:{USER['id']}:hour", 3600)]
+    assert fake.closed is True
+
+
+@pytest.mark.asyncio
+async def test_digest_account_quota_fails_closed_in_production_without_redis(monkeypatch):
+    monkeypatch.setenv("RENDER", "true")
+    monkeypatch.delenv("RATE_LIMIT_STORAGE_URI", raising=False)
+    monkeypatch.delenv("REDIS_URL", raising=False)
+
+    with pytest.raises(HTTPException) as exc:
+        await digest_router._enforce_account_quota(USER["id"])
+
+    assert exc.value.status_code == 503
