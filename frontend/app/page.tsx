@@ -107,7 +107,7 @@ export default function HomePage() {
         interests: travelPlan.interests
       };
 
-      const response = await fetch(`${API_BASE}/api/plan`, {
+      const response = await fetch(`${API_BASE}/api/plan/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(travelPlanData)
