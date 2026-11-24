@@ -1,5 +1,6 @@
 """Gemini API provider used by NomadsAI."""
 
+import asyncio
 import json
 import logging
 import os
@@ -10,6 +11,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
 def _messages_to_gemini(messages: list[dict[str, str]]) -> tuple[dict[str, str] | None, list[dict[str, Any]]]:
@@ -52,8 +54,7 @@ class GeminiProvider:
         if instruction:
             payload["systemInstruction"] = instruction
         generation_config: dict[str, Any] = {}
-        if "temperature" in kwargs:
-            generation_config["temperature"] = kwargs["temperature"]
+        # Gemini 3.8 Flash does not accept temperature. Use the model's default.
         max_tokens = kwargs.get("max_output_tokens", kwargs.get("max_tokens"))
         if max_tokens is not None:
             generation_config["maxOutputTokens"] = max_tokens
@@ -67,8 +68,22 @@ class GeminiProvider:
         url = f"{GEMINI_API_BASE}/{model}:generateContent"
         headers = {"x-goog-api-key": self.api_key, "Content-Type": "application/json"}
         async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client:
-            response = await client.post(url, headers=headers, json=payload)
-            response.raise_for_status()
+            for attempt in range(3):
+                try:
+                    response = await client.post(url, headers=headers, json=payload)
+                    response.raise_for_status()
+                    break
+                except httpx.HTTPStatusError as exc:
+                    status = exc.response.status_code
+                    if status not in _RETRYABLE_STATUS_CODES or attempt == 2:
+                        logger.error("Gemini API request failed with HTTP %s: %s", status, exc.response.text[:500])
+                        raise
+                    delay = 2 ** attempt
+                    logger.warning(
+                        "Gemini API returned HTTP %s; retrying generation in %s seconds (attempt %s/3)",
+                        status, delay, attempt + 1,
+                    )
+                    await asyncio.sleep(delay)
             data = response.json()
         candidates = data.get("candidates") or []
         if not candidates:
