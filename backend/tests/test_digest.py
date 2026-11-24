@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -101,8 +103,7 @@ def test_digest_rejects_unverified_account_email():
 
 
 
-@pytest.mark.asyncio
-async def test_digest_account_quota_is_shared_and_limited(monkeypatch):
+def test_digest_account_quota_is_shared_and_limited(monkeypatch):
     class FakeRedisClient:
         def __init__(self):
             self.count = 0
@@ -131,24 +132,26 @@ async def test_digest_account_quota_is_shared_and_limited(monkeypatch):
     monkeypatch.setenv("RATE_LIMIT_STORAGE_URI", "redis://test")
     monkeypatch.setattr(digest_router, "Redis", FakeRedis)
 
-    for _ in range(3):
-        await digest_router._enforce_account_quota(USER["id"])
+    async def run():
+        for _ in range(3):
+            await digest_router._enforce_account_quota(USER["id"])
+        with pytest.raises(HTTPException) as exc:
+            await digest_router._enforce_account_quota(USER["id"])
+        return exc.value.status_code
 
-    with pytest.raises(HTTPException) as exc:
-        await digest_router._enforce_account_quota(USER["id"])
-
-    assert exc.value.status_code == 429
+    assert asyncio.run(run()) == 429
     assert fake.expirations == [(f"nomadsai:digest:user:{USER['id']}:hour", 3600)]
     assert fake.closed is True
 
 
-@pytest.mark.asyncio
-async def test_digest_account_quota_fails_closed_in_production_without_redis(monkeypatch):
+def test_digest_account_quota_fails_closed_in_production_without_redis(monkeypatch):
     monkeypatch.setenv("RENDER", "true")
     monkeypatch.delenv("RATE_LIMIT_STORAGE_URI", raising=False)
     monkeypatch.delenv("REDIS_URL", raising=False)
 
-    with pytest.raises(HTTPException) as exc:
-        await digest_router._enforce_account_quota(USER["id"])
+    async def run():
+        with pytest.raises(HTTPException) as exc:
+            await digest_router._enforce_account_quota(USER["id"])
+        return exc.value.status_code
 
-    assert exc.value.status_code == 503
+    assert asyncio.run(run()) == 503
