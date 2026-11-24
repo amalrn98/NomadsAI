@@ -3,6 +3,7 @@
 Generation or parsing failures are raised to the API layer. This service never
 returns a fabricated successful itinerary when the model call fails.
 """
+import asyncio
 import json
 import logging
 from typing import Any
@@ -101,9 +102,12 @@ async def generate_dynamic_itinerary(
 
     sources: list[dict[str, str]] = []
     try:
-        search_results = await search_web(
-            f"{destination} official tourism visitor information attractions transport",
-            max_results=5,
+        search_results = await asyncio.wait_for(
+            search_web(
+                f"{destination} official tourism visitor information attractions transport",
+                max_results=5,
+            ),
+            timeout=12,
         )
         for item in search_results:
             url = item.get("href")
