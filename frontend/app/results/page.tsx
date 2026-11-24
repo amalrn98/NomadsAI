@@ -91,19 +91,35 @@ function ResultsPageContent() {
   }, [searchParams]);
 
   async function shareItinerary() {
-    const url = window.location.href;
-    const title = travelPlan?.summary || "NomadsAI travel itinerary";
+    if (!travelPlan) return;
+    const dayDetails = travelPlan.itinerary.map((day) => {
+      const activities = day.activities.slice(0, 3).map((activity) => `- ${activity}`).join("\n");
+      return `Day ${day.day}: ${day.theme || day.title || "Travel plan"}\n${activities}`;
+    }).join("\n\n");
+    const sourceLinks = (travelPlan.sources || [])
+      .slice(0, 3)
+      .map((source) => `${source.title}: ${source.url}`)
+      .join("\n");
+    const shareText = [
+      `${travelPlan.from_city} to ${travelPlan.destination}, ${travelPlan.total_days} days`,
+      travelPlan.summary,
+      dayDetails,
+      travelPlan.data_notice || "AI-generated travel suggestions. Verify details before travel.",
+      sourceLinks ? `Search references (unverified):\n${sourceLinks}` : "",
+    ].filter(Boolean).join("\n\n");
+    const title = `NomadsAI: ${travelPlan.destination}`;
+
     if (navigator.share) {
       try {
-        await navigator.share({ title, text: "View this travel itinerary.", url });
+        await navigator.share({ title, text: shareText });
         return;
       } catch (shareError) {
         if (shareError instanceof DOMException && shareError.name === "AbortError") return;
       }
     }
     try {
-      await navigator.clipboard.writeText(url);
-      setShareStatus("Itinerary link copied.");
+      await navigator.clipboard.writeText(shareText);
+      setShareStatus("Itinerary copied to clipboard.");
     } catch {
       setShareStatus("Sharing is unavailable in this browser.");
     }
