@@ -21,13 +21,19 @@ export default function AuthPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // One-time read of browser-only URL state (not available during SSR), so it must happen after mount.
+    // Read browser-only URL state after mount, then listen for Supabase's PKCE recovery event.
     /* eslint-disable react-hooks/set-state-in-effect */
     const params = new URLSearchParams(window.location.search);
     if (params.get("mode") === "sign-up") setMode("sign-up");
     if (window.location.hash.includes("type=recovery")) setRecovery(true);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, []);
+
+    if (!supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setRecovery(true);
+    });
+    return () => subscription.unsubscribe();
+  }, [supabase]);
 
   function changeMode(next: Mode) {
     setMode(next);
