@@ -25,3 +25,11 @@ class TravelPlanResponse(BaseModel):
     from_city: str
     destination: str
     total_days: int
+    data_status: str = "ai_generated_unverified"
+    verified: bool = False
+    retrieved_at: str | None = None
+    sources: List[dict] = PydanticField(default_factory=list)
+    data_notice: str = (
+        "AI-generated planning suggestions are unverified. Check official sources for "
+        "time-sensitive venue, price, schedule, and availability details."
+    )
