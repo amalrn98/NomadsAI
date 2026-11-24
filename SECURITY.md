@@ -34,4 +34,4 @@ Tracking: GitHub issues #13 and #16. Issue #13 remains open until cross-account 
 4. Record the affected package, advisory, impact, mitigation, and verification result in the relevant issue or pull request.
 5. Never paste secrets into issues, logs, commits, or chat.
 
-The dependency-review workflow checks pull requests for newly introduced high-severity vulnerabilities. CodeQL, Gitleaks, pip-audit, and npm audit run through the existing CI/security workflows. Repository-level secret scanning and push protection must still be verified in GitHub settings.
+The dependency-review workflow checks pull requests for newly introduced high-severity vulnerabilities. Dependabot is configured to open weekly grouped update PRs for Python, npm, and GitHub Actions dependencies. CodeQL, Gitleaks, pip-audit, and npm audit run through the existing CI/security workflows. Repository-level secret scanning and push protection must still be verified in GitHub settings.
